@@ -206,7 +206,7 @@ function renderBookDetail(id){
     ?'<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
     :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
   const description=book.description||book.excerpt||"Uma publicação da 84 Books Publishing.";
-  const canDownload=book.type==="gratuito"&&!!book.filePath&&!!current84User;
+  const canDownload=book.type==="gratuito"&&!!book.filePath&&!!current84User&&current84Role==="admin";
   const canRead=!!book.filePath&&(book.type==="gratuito"||current84Role==="admin");
   container.innerHTML=
     '<div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>'+
@@ -578,6 +578,7 @@ renderRoute();
       return;
     }
     setPdfReaderStatus("A preparar o documento para leitura...");
+    const requestToken=++activePdfToken;
     try{
       const {data,error}=await supabaseClient.storage.from("84books-files").createSignedUrl(detail.path,300);
       if(error)throw error;
@@ -585,11 +586,11 @@ renderRoute();
       const pdfjs=await loadPdfJs();
       const loadingTask=pdfjs.getDocument({url:data.signedUrl});
       const pdf=await loadingTask.promise;
+      if(requestToken!==activePdfToken){try{await pdf.destroy();}catch(error){}return;}
       if(activePdfDocument){try{await activePdfDocument.destroy();}catch(error){}}
       activePdfDocument=pdf;
       activePdfPage=1;
       activePdfZoom=1;
-      activePdfToken++;
       updatePdfReaderControls();
       setPdfReaderStatus("PDF carregado. A preparar a primeira página...");
       await renderPdfReaderPage();
