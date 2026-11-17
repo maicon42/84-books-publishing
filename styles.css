@@ -353,3 +353,7 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
   .admin-form-actions .auth-submit,.admin-form-actions .member-secondary{width:100%}
   .admin-list-heading{align-items:flex-start;flex-direction:column}
 }
+
+@media(max-width:700px){
+  .member-menu{grid-template-columns:repeat(auto-fit,minmax(70px,1fr))}
+}
