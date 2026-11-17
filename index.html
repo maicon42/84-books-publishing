@@ -25,7 +25,6 @@
       <a href="#/membros/profile" data-route="membros"><span class="nav-icon">♙</span><span>Perfil</span></a>
     </nav>
     <div class="header-tools">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo claro"><span class="theme-icon" id="themeIcon">☀</span><span class="theme-label" id="themeLabel">Modo claro</span></button>
       <button class="account-trigger" id="accountOpen" type="button">Entrar / Criar conta</button>
       <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="siteMenu"><span>☰</span><small>Menu</small></button>
     </div>
@@ -43,6 +42,10 @@
       <div class="site-menu-soon"><span>↓ Downloads</span><small>Em preparação</small></div>
       <div class="site-menu-soon"><span>♢ Notificações</span><small>Em preparação</small></div>
       <div class="site-menu-soon"><span>⚙ Definições</span><small>Em preparação</small></div>
+      <a href="#/membros/admin" id="adminMenuLink" hidden><span>♜</span><b>Painel de administração</b></a>
+      <div class="site-menu-divider"></div>
+      <button class="site-menu-action" id="menuThemeToggle" type="button" aria-label="Ativar modo claro"><span class="theme-icon" id="themeIcon">☀</span><span class="theme-label" id="themeLabel">Modo claro</span></button>
+      <button class="site-menu-action menu-signout" id="menuSignOut" type="button" hidden><span>↪</span><b>Terminar sessão</b></button>
     </div>
   </header>
 
@@ -163,11 +166,11 @@
       <div>
         <div class="eyebrow dark"><span></span> ESPAÇO EXCLUSIVO DO MEMBRO</div>
         <h2>Bem-vindo, <em id="memberName">leitor</em>.</h2>
+        <span class="role-badge" id="memberRoleBadge" hidden>♜ ADMINISTRADOR</span>
         <p>Organize o seu perfil e acompanhe a sua atividade na 84 Books Publishing.</p>
       </div>
       <div class="member-actions">
         <button class="member-secondary" id="memberHome" type="button">Voltar ao início</button>
-        <button class="member-logout" id="memberSignOut" type="button">Terminar sessão</button>
       </div>
     </div>
     <div class="member-layout">
@@ -175,6 +178,7 @@
         <button class="member-tab active" type="button" data-member-tab="profile">Meu perfil</button>
         <button class="member-tab" type="button" data-member-tab="library">Minha biblioteca</button>
         <button class="member-tab" type="button" data-member-tab="community">Comunidade</button>
+        <button class="member-tab admin-member-tab" id="adminMemberTab" type="button" data-member-tab="admin" hidden>Administração</button>
       </nav>
       <div class="member-panels">
         <section class="member-panel" data-member-panel="profile">
@@ -219,6 +223,33 @@
             <article class="member-feature"><span>◉</span><h4>Perfil público de autor</h4><p>Autores e artistas poderão apresentar a sua biografia e as suas obras.</p><small>EM PREPARAÇÃO</small></article>
             <article class="member-feature"><span>✉</span><h4>Mensagens privadas</h4><p>Conversas entre leitores e autores, com ferramentas de segurança e denúncia.</p><small>EM PREPARAÇÃO</small></article>
           </div>
+        </section>
+        <section class="member-panel admin-panel" data-member-panel="admin" hidden>
+          <div class="member-panel-heading"><span>CONTROLO DA EDITORA</span><h3>Painel de administração</h3><p>Publique novos livros, atualize os dados das obras e retire publicações do catálogo.</p></div>
+          <form id="adminBookForm" class="admin-book-form">
+            <input id="adminBookId" type="hidden">
+            <input id="adminBookCoverPath" type="hidden">
+            <input id="adminBookFilePath" type="hidden">
+            <div class="admin-form-heading"><strong id="adminFormTitle">Adicionar novo livro</strong><span>Os campos com * são obrigatórios.</span></div>
+            <div class="profile-grid">
+              <label class="profile-field">Título do livro *<input id="adminBookTitle" type="text" required maxlength="180"></label>
+              <label class="profile-field">Autor / autora *<input id="adminBookAuthor" type="text" required maxlength="140"></label>
+              <label class="profile-field">Categoria<input id="adminBookCategory" type="text" maxlength="80" placeholder="Ex.: Educação, Literatura..."></label>
+              <label class="profile-field">Tipo de acesso<select id="adminBookType"><option value="gratuito">Gratuito</option><option value="pago">Pago</option><option value="breve">Em preparação</option></select></label>
+              <label class="profile-field">Preço (Kz)<input id="adminBookPrice" type="number" min="0" step="1" value="0"></label>
+              <label class="profile-field">Estado<select id="adminBookStatus"><option value="published">Publicado</option><option value="draft">Rascunho</option></select></label>
+            </div>
+            <label class="profile-field">Descrição do livro<textarea id="adminBookDescription" rows="3" maxlength="1200" placeholder="Apresente o livro aos leitores..."></textarea></label>
+            <label class="profile-field">Texto de pré-visualização<textarea id="adminBookPreview" rows="5" maxlength="12000" placeholder="Escreva uma amostra que os leitores poderão consultar..."></textarea></label>
+            <div class="profile-grid">
+              <label class="profile-field">Capa do livro (imagem)<input id="adminBookCover" type="file" accept="image/png,image/jpeg,image/webp"></label>
+              <label class="profile-field">Ficheiro do livro (PDF)<input id="adminBookFile" type="file" accept="application/pdf"></label>
+            </div>
+            <p class="admin-upload-note">A capa será pública. Os PDFs gratuitos poderão ser descarregados por leitores autenticados; PDFs pagos ficam protegidos até existir integração de compras.</p>
+            <div class="admin-form-actions"><p id="adminBookMessage" class="profile-message" role="status" aria-live="polite"></p><button class="auth-submit profile-save" id="adminBookSave" type="submit">Publicar livro</button><button class="member-secondary" id="adminBookCancel" type="button" hidden>Cancelar edição</button></div>
+          </form>
+          <div class="admin-list-heading"><h4>Livros da editora</h4><button class="member-secondary" id="adminRefreshBooks" type="button">Atualizar lista</button></div>
+          <div id="adminBooksList" class="admin-books-list"><p class="admin-empty">A carregar as publicações...</p></div>
         </section>
       </div>
     </div>
