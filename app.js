@@ -139,6 +139,7 @@ function parseRoute(){
   if(parts[0]==="livro"&&parts[1])return{page:"livro",id:Number(parts[1])};
   if(parts[0]==="membros")return{page:"membros",tab:parts[1]||"profile"};
   if(parts[0]==="favoritos"){activeFilter="favoritos";return{page:"biblioteca",fromFavorites:true};}
+  if(parts[0]==="biblioteca")activeFilter="todos";
   const known=["inicio","boas-vindas","biblioteca","comunidade","sobre","contacto"];
   return{page:known.includes(parts[0])?parts[0]:"inicio"};
 }
