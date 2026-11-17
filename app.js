@@ -150,6 +150,7 @@ renderBooks();
   const passwordInput = document.getElementById("authPassword");
   const submitButton = document.getElementById("authSubmit");
   const forgotButton = document.getElementById("forgotPassword");
+  const resendButton = document.getElementById("resendConfirmation");
   const message = document.getElementById("authMessage");
   const sessionPanel = document.getElementById("accountSession");
   const welcome = document.getElementById("accountWelcome");
@@ -166,6 +167,7 @@ renderBooks();
     title.textContent = mode === "signup" ? "Crie a sua conta gratuita." : "A sua biblioteca começa aqui.";
     submitButton.textContent = mode === "signup" ? "Criar a minha conta" : "Entrar na minha conta";
     forgotButton.hidden = mode === "signup";
+    resendButton.hidden = true;
     showMessage("");
   }
   function showOverlay(){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden"; }
@@ -174,6 +176,7 @@ renderBooks();
     const user = session && session.user;
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
+    resendButton.hidden = !!user;
     sessionPanel.hidden = !user;
     openButton.textContent = user ? "A minha conta" : "Entrar / Criar conta";
     if(user){
@@ -213,6 +216,7 @@ renderBooks();
           renderSession(data.session);
         }else{
           showMessage("Conta criada! Verifique a sua caixa de e-mail e confirme o endereço antes de iniciar sessão.");
+          resendButton.hidden = false;
         }
       }else{
         const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
@@ -220,8 +224,24 @@ renderBooks();
         showMessage("Sessão iniciada com sucesso.");
         renderSession(data.session);
       }
-    }catch(error){showMessage(error.message || "Ocorreu um erro. Tente novamente.",true);}
+    }catch(error){
+      showMessage(error.message || "Ocorreu um erro. Tente novamente.",true);
+      if(mode === "login" && /email.*not confirmed|not confirmed.*email/i.test(error.message || "")) resendButton.hidden = false;
+    }
     finally{submitButton.disabled=false;submitButton.textContent=mode==="signup"?"Criar a minha conta":"Entrar na minha conta";}
+  });
+  resendButton.addEventListener("click",async()=>{
+    const email=emailInput.value.trim();
+    if(!email){showMessage("Introduza o seu e-mail no campo acima.",true);emailInput.focus();return;}
+    resendButton.disabled=true;
+    const originalText=resendButton.textContent;
+    resendButton.textContent="A enviar...";
+    try{
+      const {error}=await supabaseClient.auth.resend({type:"signup",email,options:{emailRedirectTo:window.location.href.split("#")[0]}});
+      if(error)throw error;
+      showMessage("Pedido enviado. Verifique a caixa de entrada e também as pastas de spam ou lixo eletrónico.");
+    }catch(error){showMessage(error.message || "Não foi possível reenviar a confirmação. Aguarde um pouco e tente novamente.",true);}
+    finally{resendButton.disabled=false;resendButton.textContent=originalText;}
   });
   forgotButton.addEventListener("click",async()=>{
     const email=emailInput.value.trim();
