@@ -176,7 +176,7 @@ renderBooks();
     const user = session && session.user;
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
-    resendButton.hidden = !!user;
+    resendButton.hidden = !!user || mode === "signup";
     sessionPanel.hidden = !user;
     openButton.textContent = user ? "A minha conta" : "Entrar / Criar conta";
     if(user){
