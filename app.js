@@ -1,4 +1,4 @@
-const books = [
+const demoBooks = [
   {id:1,title:"O Poder da Leitura",author:"84 Books Publishing",category:"Desenvolvimento pessoal",type:"gratuito",price:"Grátis",tone:"tone-one",status:"Disponível",excerpt:"A leitura é uma das ferramentas mais poderosas para transformar a maneira como vemos o mundo. Cada página oferece uma oportunidade de aprender, questionar e crescer.\n\nLer não é apenas reconhecer palavras: é construir ideias, desenvolver a imaginação e descobrir caminhos que antes pareciam impossíveis.\n\nNa 84 Books Publishing, acreditamos que o conhecimento deve circular e alcançar pessoas de diferentes lugares."},
   {id:2,title:"Caminhos da Coragem",author:"84 Books Publishing",category:"Motivação",type:"pago",price:"Em breve",tone:"tone-two",status:"Disponível",excerpt:"A coragem não significa ausência de medo. Significa encontrar uma razão para continuar, mesmo quando o caminho exige esforço.\n\nEste livro fará parte do catálogo oficial da editora. A versão completa e as informações de compra serão anunciadas quando a publicação estiver pronta."},
   {id:3,title:"Pequenas Grandes Ideias",author:"84 Books Publishing",category:"Conhecimento",type:"gratuito",price:"Grátis",tone:"tone-three",status:"Disponível",excerpt:"Uma ideia pode começar pequena e, com dedicação, transformar-se em algo extraordinário. O conhecimento cresce quando é partilhado.\n\nEste espaço de leitura apresenta uma pequena amostra do tipo de conteúdo que a 84 Books Publishing pretende oferecer aos seus leitores."},
@@ -6,6 +6,7 @@ const books = [
   {id:5,title:"Além das Fronteiras",author:"84 Books Publishing",category:"Literatura",type:"pago",price:"Em breve",tone:"tone-five",status:"Disponível",excerpt:"Histórias atravessam fronteiras, aproximam culturas e mostram que a experiência humana tem muitas vozes.\n\nA publicação está a ser preparada. Os detalhes da edição e o acesso integral serão anunciados em breve."},
   {id:6,title:"Aprender Sempre",author:"84 Books Publishing",category:"Educação",type:"gratuito",price:"Grátis",tone:"tone-six",status:"Disponível",excerpt:"Aprender é um processo que acompanha toda a vida. A curiosidade ajuda-nos a fazer perguntas melhores e a encontrar respostas mais completas.\n\nEste pequeno texto é uma demonstração do leitor digital da 84 Books Publishing."}
 ];
+let books = [...demoBooks];
 function readSavedList(key){
   try {
     const value = JSON.parse(localStorage.getItem(key) || "[]");
@@ -23,27 +24,29 @@ const grid = document.getElementById("bookGrid");
 const search = document.getElementById("searchInput");
 const empty = document.getElementById("emptyState");
 
+function bookKey(id){return typeof id==="number"?id:String(id);}
+function parseBookId(value){return /^\d+$/.test(String(value))?Number(value):String(value);}
 function renderBooks(){
   const term = search.value.trim().toLocaleLowerCase("pt");
   const visible = books.filter(book => {
     const matchesText = (book.title+" "+book.author+" "+book.category).toLocaleLowerCase("pt").includes(term);
     const matchesFilter = activeFilter === "todos" ||
-      (activeFilter === "favoritos" && favorites.has(book.id)) ||
+      (activeFilter === "favoritos" && favorites.has(bookKey(book.id))) ||
       (activeFilter !== "favoritos" && book.type === activeFilter);
     return matchesText && matchesFilter;
   });
   grid.innerHTML = visible.map(book => {
+    const isFavorite=favorites.has(bookKey(book.id));
     const tag = book.type === "gratuito" ? '<span class="status-tag">Gratuito</span>' :
       book.type === "pago" ? '<span class="status-tag paid">Pago</span>' : '<span class="status-tag">Em breve</span>';
-    const buttonText = "Ver detalhes →";
-    return `<article class="book-card" data-book-card="${book.id}" role="link" tabindex="0" aria-label="Abrir detalhes de ${book.title}">
-      <div class="cover-wrap">
-        <div class="cover-art ${book.tone}"><small>84 BOOKS PUBLISHING</small><strong>${book.title}</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>
-        ${tag}
-        <button class="favorite-btn ${favorites.has(book.id) ? "is-favorite" : ""}" data-favorite="${book.id}" aria-label="${favorites.has(book.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}">${favorites.has(book.id) ? "♥" : "♡"}</button>
-      </div>
-      <div class="book-info"><span class="book-category">${book.category}</span><h3>${book.title}</h3><p class="book-author">Por ${book.author}</p><div class="book-bottom"><span class="book-price">${book.price}</span><button class="book-open" data-open="${book.id}">${buttonText}</button></div></div>
-    </article>`;
+    const cover = book.coverUrl
+      ? '<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
+      : '<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
+    const price = book.type==="gratuito"?"Grátis":book.type==="pago"?(Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago"):"Em preparação";
+    return '<article class="book-card" data-book-card="'+escapeHTML(book.id)+'" role="link" tabindex="0" aria-label="Abrir detalhes de '+escapeHTML(book.title)+'">'+
+      '<div class="cover-wrap">'+cover+tag+
+        '<button class="favorite-btn '+(isFavorite?"is-favorite":"")+'" data-favorite="'+escapeHTML(book.id)+'" aria-label="'+(isFavorite?"Remover dos favoritos":"Adicionar aos favoritos")+'">'+(isFavorite?"♥":"♡")+'</button>'+
+      '</div><div class="book-info"><span class="book-category">'+escapeHTML(book.category||"Geral")+'</span><h3>'+escapeHTML(book.title)+'</h3><p class="book-author">Por '+escapeHTML(book.author)+'</p><div class="book-bottom"><span class="book-price">'+price+'</span><button class="book-open" data-open="'+escapeHTML(book.id)+'">Ver detalhes →</button></div></div></article>';
   }).join("");
   empty.hidden = visible.length !== 0;
 }
