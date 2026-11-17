@@ -1,11 +1,4 @@
-const demoBooks = [
-  {id:1,title:"O Poder da Leitura",author:"84 Books Publishing",category:"Desenvolvimento pessoal",type:"gratuito",price:"Grátis",tone:"tone-one",status:"Disponível",excerpt:"A leitura é uma das ferramentas mais poderosas para transformar a maneira como vemos o mundo. Cada página oferece uma oportunidade de aprender, questionar e crescer.\n\nLer não é apenas reconhecer palavras: é construir ideias, desenvolver a imaginação e descobrir caminhos que antes pareciam impossíveis.\n\nNa 84 Books Publishing, acreditamos que o conhecimento deve circular e alcançar pessoas de diferentes lugares."},
-  {id:2,title:"Caminhos da Coragem",author:"84 Books Publishing",category:"Motivação",type:"pago",price:"Em breve",tone:"tone-two",status:"Disponível",excerpt:"A coragem não significa ausência de medo. Significa encontrar uma razão para continuar, mesmo quando o caminho exige esforço.\n\nEste livro fará parte do catálogo oficial da editora. A versão completa e as informações de compra serão anunciadas quando a publicação estiver pronta."},
-  {id:3,title:"Pequenas Grandes Ideias",author:"84 Books Publishing",category:"Conhecimento",type:"gratuito",price:"Grátis",tone:"tone-three",status:"Disponível",excerpt:"Uma ideia pode começar pequena e, com dedicação, transformar-se em algo extraordinário. O conhecimento cresce quando é partilhado.\n\nEste espaço de leitura apresenta uma pequena amostra do tipo de conteúdo que a 84 Books Publishing pretende oferecer aos seus leitores."},
-  {id:4,title:"O Futuro Começa Hoje",author:"84 Books Publishing",category:"Educação",type:"breve",price:"Em preparação",tone:"tone-four",status:"Em preparação",excerpt:"Este título está em preparação pela equipa editorial. Em breve, esta página apresentará a descrição, os detalhes da publicação e a data prevista de lançamento."},
-  {id:5,title:"Além das Fronteiras",author:"84 Books Publishing",category:"Literatura",type:"pago",price:"Em breve",tone:"tone-five",status:"Disponível",excerpt:"Histórias atravessam fronteiras, aproximam culturas e mostram que a experiência humana tem muitas vozes.\n\nA publicação está a ser preparada. Os detalhes da edição e o acesso integral serão anunciados em breve."},
-  {id:6,title:"Aprender Sempre",author:"84 Books Publishing",category:"Educação",type:"gratuito",price:"Grátis",tone:"tone-six",status:"Disponível",excerpt:"Aprender é um processo que acompanha toda a vida. A curiosidade ajuda-nos a fazer perguntas melhores e a encontrar respostas mais completas.\n\nEste pequeno texto é uma demonstração do leitor digital da 84 Books Publishing."}
-];
+const demoBooks = [];
 let books = [...demoBooks];
 function readSavedList(key){
   try {
@@ -20,25 +13,29 @@ function savePreference(key,value){
 }
 const favorites = new Set(readSavedList("84books-favorites"));
 let activeFilter = "todos";
+let activeCategory = "todos";
+let catalogLoadError = false;
 const grid = document.getElementById("bookGrid");
 const search = document.getElementById("searchInput");
 const empty = document.getElementById("emptyState");
+const genreFilterList = document.getElementById("genreFilterList");
 
 function bookKey(id){return typeof id==="number"?id:String(id);}
 function parseBookId(value){return /^\d+$/.test(String(value))?Number(value):String(value);}
 function bookPriceLabel(book){if(typeof book.price==="string")return book.price;if(book.type==="gratuito")return "Grátis";if(book.type==="pago")return Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago";return "Em preparação";}
+function hideFirstWelcome(){
+  const panel=document.getElementById("homeWelcomePanel");
+  if(panel)panel.hidden=true;
+}
 function renderHomeGreeting(name){
   const greeting=document.getElementById("homeGreeting");
   if(!greeting)return;
   const user=current84User;
-  if(!user){
-    greeting.textContent="Bem-vindo à 84 Books Publishing.";
-    return;
-  }
-  const metadataName=user.user_metadata&&user.user_metadata.full_name;
-  const displayName=String(name||metadataName||(user.email||"").split("@")[0]||"leitor").trim();
+  const metadataName=user&&user.user_metadata&&user.user_metadata.full_name;
+  const displayName=String(name||metadataName||(user&&user.email||"").split("@")[0]||"leitor").trim();
   greeting.textContent="Seja bem-vindo, "+displayName+"!";
 }
+
 function renderHomeBookCard(book){
   const cover=book.coverUrl
     ?'<img src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'" loading="lazy">'
@@ -62,14 +59,52 @@ function renderHome(){
     :'<p class="home-empty">Ainda não há novos livros publicados. Quando a equipa lançar uma obra, ela aparecerá aqui.</p>';
 }
 
+function normalizeBookText(value){
+  return String(value||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("pt").trim();
+}
+const bookGenres=[
+  ["Religiosos","Religioso"],["Bíblicos","Bíblico"],["Cristãos","Cristão"],
+  ["Romance","Romance"],["Drama","Drama"],["Ação","Ação"],["Aventura","Aventura"],
+  ["Suspense","Suspense"],["Terror","Terror"],["Mistério","Mistério"],
+  ["Fantasia","Fantasia"],["Ficção científica","Ficção científica"],
+  ["Biografia","Biografia"],["História","História"],["História de Angola","História de Angola"],
+  ["Educação","Educação"],["Poesia","Poesia"],["Contos","Contos"],["Crónicas","Crónica"],
+  ["Literatura clássica","Literatura clássica"],["Policial","Policial"],["Guerra","Guerra"],
+  ["Autoajuda","Autoajuda"],["Desenvolvimento pessoal","Desenvolvimento pessoal"],
+  ["Psicologia","Psicologia"],["Filosofia","Filosofia"],["Sociologia","Sociologia"],
+  ["Direito","Direito"],["Economia","Economia"],["Negócios e empreendedorismo","Empreendedorismo"],
+  ["Ciência","Ciência"],["Tecnologia","Tecnologia"],["Infantil","Infantil"],
+  ["Juvenil","Juvenil"],["Quadrinhos e mangá","Mangá"],["Saúde e bem-estar","Saúde"],
+  ["Viagem e cultura","Viagem"],["Culinária","Culinária"],["Política e sociedade","Política"],
+  ["Teatro","Teatro"],["Geografia","Geografia"],["Desporto","Desporto"]
+];
+function renderGenreFilters(){
+  if(!genreFilterList)return;
+  const known=new Set(bookGenres.map(item=>normalizeBookText(item[1])));
+  const extras=[...new Set(books.map(book=>String(book.category||"").trim()).filter(Boolean))]
+    .filter(category=>!known.has(normalizeBookText(category)))
+    .sort((a,b)=>a.localeCompare(b,"pt"));
+  const options=[["Todos os géneros","todos"],...bookGenres,...extras.map(category=>[category,category])];
+  genreFilterList.innerHTML=options.map(item=>'<button type="button" class="filter-chip '+(normalizeBookText(activeCategory)===normalizeBookText(item[1])?"selected":"")+'" data-genre-filter="'+escapeHTML(item[1])+'">'+escapeHTML(item[0])+'</button>').join("");
+}
+function updateGenreFilterSelection(){
+  if(!genreFilterList)return;
+  genreFilterList.querySelectorAll("[data-genre-filter]").forEach(button=>{
+    button.classList.toggle("selected",normalizeBookText(button.dataset.genreFilter)===normalizeBookText(activeCategory));
+  });
+}
 function renderBooks(){
-  const term = search.value.trim().toLocaleLowerCase("pt");
+  const term = normalizeBookText(search.value);
   const visible = books.filter(book => {
-    const matchesText = (book.title+" "+book.author+" "+book.category).toLocaleLowerCase("pt").includes(term);
+    const searchable=[book.title,book.author,book.category,book.description,book.previewText,book.excerpt].join(" ");
+    const matchesText = normalizeBookText(searchable).includes(term);
     const matchesFilter = activeFilter === "todos" ||
       (activeFilter === "favoritos" && favorites.has(bookKey(book.id))) ||
       (activeFilter !== "favoritos" && book.type === activeFilter);
-    return matchesText && matchesFilter;
+    const categoryText=normalizeBookText(book.category);
+    const selectedGenre=normalizeBookText(activeCategory);
+    const matchesCategory=activeCategory==="todos"||categoryText.includes(selectedGenre);
+    return matchesText && matchesFilter && matchesCategory;
   });
   grid.innerHTML = visible.map(book => {
     const isFavorite=favorites.has(bookKey(book.id));
@@ -85,15 +120,37 @@ function renderBooks(){
       '</div><div class="book-info"><span class="book-category">'+escapeHTML(book.category||"Geral")+'</span><h3>'+escapeHTML(book.title)+'</h3><p class="book-author">Por '+escapeHTML(book.author)+'</p><div class="book-bottom"><span class="book-price">'+price+'</span><button class="book-open" data-open="'+escapeHTML(book.id)+'">Ver detalhes →</button></div></div></article>';
   }).join("");
   empty.hidden = visible.length !== 0;
+  if(visible.length===0){
+    const heading=empty.querySelector("h3"),description=empty.querySelector("p");
+    if(catalogLoadError){
+      heading.textContent="Não foi possível carregar a biblioteca";
+      description.textContent="Verifique a ligação e tente novamente dentro de instantes.";
+    }else if(books.length===0){
+      heading.textContent="Ainda não há livros publicados";
+      description.textContent="As obras oficiais da 84 Books Publishing aparecerão aqui assim que forem lançadas.";
+    }else{
+      heading.textContent="Nenhum livro encontrado";
+      description.textContent="Experimente outro título, autor ou género.";
+    }
+  }
+  updateGenreFilterSelection();
   renderHome();
 }
 document.getElementById("filterList").addEventListener("click", event => {
   const button = event.target.closest("[data-filter]");
   if (!button) return;
   activeFilter = button.dataset.filter;
-  document.querySelectorAll(".filter-chip").forEach(chip => chip.classList.toggle("selected", chip === button));
+  document.querySelectorAll("#filterList [data-filter]").forEach(chip => chip.classList.toggle("selected", chip === button));
   renderBooks();
 });
+if(genreFilterList){
+  genreFilterList.addEventListener("click",event=>{
+    const button=event.target.closest("[data-genre-filter]");
+    if(!button)return;
+    activeCategory=button.dataset.genreFilter||"todos";
+    renderBooks();
+  });
+}
 search.addEventListener("input", renderBooks);
 const homeCategories=document.getElementById("homeCategories");
 if(homeCategories){
@@ -101,7 +158,9 @@ if(homeCategories){
     const button=event.target.closest("[data-home-category]");
     if(!button)return;
     activeFilter="todos";
-    search.value=button.dataset.homeCategory||"";
+    activeCategory=button.dataset.homeCategory||"todos";
+    search.value="";
+    renderGenreFilters();
     navigate("biblioteca");
   });
 }
@@ -253,6 +312,7 @@ document.addEventListener("click",event=>{
   }
 });
 document.getElementById("year").textContent = new Date().getFullYear();
+renderGenreFilters();
 renderBooks();
 renderHome();
 renderRoute();
@@ -398,7 +458,7 @@ renderRoute();
     const user = session && session.user;
     currentUser = user || null;
     current84User = currentUser;
-    renderHomeGreeting();
+    hideFirstWelcome();
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
     resendButton.hidden = !!user || mode === "signup";
@@ -422,7 +482,9 @@ renderRoute();
       .order("created_at",{ascending:false});
     if(error){
       console.warn("84 Books: catálogo remoto ainda não disponível.",error.message);
-      books=[...demoBooks];
+      catalogLoadError=true;
+      books=[];
+      renderGenreFilters();
       renderBooks();
       renderHome();
       return;
@@ -448,7 +510,9 @@ renderRoute();
         excerpt:row.preview_text||row.description||""
       };
     });
-    books=[...demoBooks,...remote];
+    catalogLoadError=false;
+    books=[...remote];
+    renderGenreFilters();
     renderBooks();
     renderHome();
     if(window.location.hash.startsWith("#/livro/")){
@@ -461,7 +525,7 @@ renderRoute();
     profileMessage.textContent = "A carregar o seu perfil...";
     const {data,error} = await supabaseClient
       .from("profiles")
-      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio, role")
+      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio, role, welcome_seen_at")
       .eq("id",user.id)
       .maybeSingle();
     if(error){
@@ -472,7 +536,7 @@ renderRoute();
       const metaName = user.user_metadata && user.user_metadata.full_name;
       profileFields.fullName.value = metaName || "";
       memberName.textContent = metaName || "leitor";
-      renderHomeGreeting(metaName);
+      hideFirstWelcome();
       return;
     }
     profileMessage.textContent = "";
@@ -496,7 +560,28 @@ renderRoute();
       profileFields.phone.value = phone;
     }
     memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
-    renderHomeGreeting(profile.display_name || profile.full_name || profileFields.fullName.value);
+    const firstWelcomeName=profile.display_name || profile.full_name || profileFields.fullName.value;
+    renderHomeGreeting(firstWelcomeName);
+    if(!profile.welcome_seen_at){
+      const {data:welcomeMark,error:welcomeMarkError}=await supabaseClient
+        .from("profiles")
+        .update({welcome_seen_at:new Date().toISOString()})
+        .eq("id",user.id)
+        .is("welcome_seen_at",null)
+        .select("welcome_seen_at")
+        .maybeSingle();
+      if(welcomeMarkError){
+        console.warn("84 Books: não foi possível registar a primeira apresentação.",welcomeMarkError.message);
+        hideFirstWelcome();
+      }else if(welcomeMark){
+        const welcomePanel=document.getElementById("homeWelcomePanel");
+        if(welcomePanel)welcomePanel.hidden=false;
+      }else{
+        hideFirstWelcome();
+      }
+    }else{
+      hideFirstWelcome();
+    }
   }
 
   async function openMemberArea(user){
