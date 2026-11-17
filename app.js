@@ -241,7 +241,7 @@ function renderBookDetail(id){
   const downloadButton=document.getElementById("detailDownload");
   if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
 }
-let current84User=null,authReady=false,current84Role="reader";
+let current84User=null,authReady=false,current84Role="reader",welcomeCheckUserId=null;
 function navigate(path){
   const target="#/"+String(path||"inicio").replace(/^\/+/, "");
   if(window.location.hash===target)renderRoute();else window.location.hash=target;
@@ -456,9 +456,15 @@ renderRoute();
   }
   function renderSession(session){
     const user = session && session.user;
+    const previousUserId=current84User&&current84User.id;
     currentUser = user || null;
     current84User = currentUser;
-    hideFirstWelcome();
+    if(!user){
+      welcomeCheckUserId=null;
+      hideFirstWelcome();
+    }else if(previousUserId!==user.id){
+      hideFirstWelcome();
+    }
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
     resendButton.hidden = !!user || mode === "signup";
@@ -562,7 +568,11 @@ renderRoute();
     memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
     const firstWelcomeName=profile.display_name || profile.full_name || profileFields.fullName.value;
     renderHomeGreeting(firstWelcomeName);
-    if(!profile.welcome_seen_at){
+    if(profile.welcome_seen_at){
+      welcomeCheckUserId=user.id;
+      hideFirstWelcome();
+    }else if(welcomeCheckUserId!==user.id){
+      welcomeCheckUserId=user.id;
       const {data:welcomeMark,error:welcomeMarkError}=await supabaseClient
         .from("profiles")
         .update({welcome_seen_at:new Date().toISOString()})
@@ -572,15 +582,16 @@ renderRoute();
         .maybeSingle();
       if(welcomeMarkError){
         console.warn("84 Books: não foi possível registar a primeira apresentação.",welcomeMarkError.message);
-        hideFirstWelcome();
-      }else if(welcomeMark){
+        if(current84User&&current84User.id===user.id){
+          hideFirstWelcome();
+          welcomeCheckUserId=null;
+        }
+      }else if(welcomeMark&&current84User&&current84User.id===user.id){
         const welcomePanel=document.getElementById("homeWelcomePanel");
         if(welcomePanel)welcomePanel.hidden=false;
       }else{
         hideFirstWelcome();
       }
-    }else{
-      hideFirstWelcome();
     }
   }
 
