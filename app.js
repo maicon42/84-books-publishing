@@ -207,6 +207,7 @@ function renderBookDetail(id){
     :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
   const description=book.description||book.excerpt||"Uma publicação da 84 Books Publishing.";
   const canDownload=book.type==="gratuito"&&!!book.filePath&&!!current84User;
+  const canRead=!!book.filePath&&(book.type==="gratuito"||current84Role==="admin");
   container.innerHTML=
     '<div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>'+
     '<div class="book-detail-layout"><div class="detail-cover-wrap">'+cover+'</div><div class="book-detail-copy">'+
@@ -215,9 +216,16 @@ function renderBookDetail(id){
     '<p class="detail-description">'+escapeHTML(description)+'</p>'+
     '<div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>'+escapeHTML(bookPriceLabel(book))+'</strong></div>'+
     '<div class="detail-actions">'+(book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>')+
+    (canRead?'<button class="button button-primary" id="detailReadBook" type="button">Ler livro completo <span>→</span></button>':"")+
     (canDownload?'<button class="detail-favorite" id="detailDownload" type="button">↓ Descarregar PDF</button>':"")+
     '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button></div>'+
     '<p class="detail-note">'+escapeHTML(accessNote)+'</p></div></div>'+
+    '<section class="pdf-reader" id="bookPdfReader" hidden aria-label="Leitor de livro em PDF">'+
+      '<div class="pdf-reader-heading"><div><span class="detail-category">LEITOR DIGITAL 84 BOOKS</span><h2 id="pdfReaderTitle">Leitura do livro</h2><p id="pdfReaderStatus" role="status" aria-live="polite">O leitor está pronto para abrir o PDF.</p></div><button type="button" class="pdf-reader-close" id="pdfReaderClose">Fechar leitor ×</button></div>'+
+      '<div class="pdf-reader-toolbar"><button type="button" id="pdfPrevPage" disabled>← Anterior</button><label>Página <input id="pdfPageNumber" type="number" min="1" value="1" disabled> de <strong id="pdfPageCount">—</strong></label><button type="button" id="pdfNextPage" disabled>Seguinte →</button><span class="pdf-reader-toolbar-spacer"></span><button type="button" id="pdfZoomOut" disabled>−</button><span id="pdfZoomValue">100%</span><button type="button" id="pdfZoomIn" disabled>+</button></div>'+
+      '<div class="pdf-reader-viewport" id="pdfReaderViewport"><canvas id="pdfReaderCanvas"></canvas></div>'+
+      '<p class="pdf-reader-footnote">O PDF é apresentado dentro da plataforma. O acesso ao ficheiro é temporário e protegido.</p>'+
+    '</section>'+
     '<section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma amostra disponibilizada pela editora.</p></section>'+
     '<section class="book-feedback" aria-labelledby="bookFeedbackTitle">'+
       '<div class="feedback-heading"><span class="detail-category">OPINIÕES DA COMUNIDADE</span><h2 id="bookFeedbackTitle">Comentários e avaliações</h2><p>Leia o que outros leitores acharam desta obra e partilhe a sua própria opinião.</p></div>'+
@@ -260,6 +268,20 @@ function renderBookDetail(id){
     favoriteButton.textContent=favorites.has(key)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos";
     renderBooks();
   });
+  const readButton=document.getElementById("detailReadBook");
+  if(readButton)readButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:open-reader",{detail:{path:book.filePath,bookId:String(book.id),title:book.title,bookType:book.type}})));
+  const readerClose=document.getElementById("pdfReaderClose");
+  if(readerClose)readerClose.addEventListener("click",()=>window.dispatchEvent(new Event("84books:close-reader")));
+  const readerPrev=document.getElementById("pdfPrevPage");
+  const readerNext=document.getElementById("pdfNextPage");
+  const readerPage=document.getElementById("pdfPageNumber");
+  const readerZoomOut=document.getElementById("pdfZoomOut");
+  const readerZoomIn=document.getElementById("pdfZoomIn");
+  if(readerPrev)readerPrev.addEventListener("click",()=>window.dispatchEvent(new Event("84books:reader-prev")));
+  if(readerNext)readerNext.addEventListener("click",()=>window.dispatchEvent(new Event("84books:reader-next")));
+  if(readerPage)readerPage.addEventListener("change",()=>window.dispatchEvent(new CustomEvent("84books:reader-page",{detail:{page:readerPage.value}})));
+  if(readerZoomOut)readerZoomOut.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:reader-zoom",{detail:{direction:-1}})));
+  if(readerZoomIn)readerZoomIn.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:reader-zoom",{detail:{direction:1}})));
   const downloadButton=document.getElementById("detailDownload");
   if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
   const reviewForm=document.getElementById("bookReviewForm");
@@ -449,6 +471,168 @@ renderRoute();
   let mode = "login";
   let supabaseClient = null;
   let adminBookCache = [];
+  let pdfJsPromise = null;
+  let activePdfDocument = null;
+  let activePdfRenderTask = null;
+  let activePdfPage = 1;
+  let activePdfZoom = 1;
+  let activePdfTitle = "";
+  let activePdfToken = 0;
+
+  function setPdfReaderStatus(text,isError){
+    const node=document.getElementById("pdfReaderStatus");
+    if(node){node.textContent=text;node.classList.toggle("error",!!isError);}
+  }
+
+  function loadPdfJs(){
+    if(window.pdfjsLib){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      return Promise.resolve(window.pdfjsLib);
+    }
+    if(pdfJsPromise)return pdfJsPromise;
+    pdfJsPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.async=true;
+      script.onload=()=>{
+        if(!window.pdfjsLib){pdfJsPromise=null;reject(new Error("A biblioteca de leitura PDF não foi carregada."));return;}
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        resolve(window.pdfjsLib);
+      };
+      script.onerror=()=>{pdfJsPromise=null;reject(new Error("Não foi possível carregar o leitor PDF. Verifique a ligação à internet."));};
+      document.head.appendChild(script);
+    });
+    return pdfJsPromise;
+  }
+
+  function updatePdfReaderControls(){
+    const total=activePdfDocument?activePdfDocument.numPages:0;
+    const pageInput=document.getElementById("pdfPageNumber");
+    const count=document.getElementById("pdfPageCount");
+    const prev=document.getElementById("pdfPrevPage");
+    const next=document.getElementById("pdfNextPage");
+    const zoomOut=document.getElementById("pdfZoomOut");
+    const zoomIn=document.getElementById("pdfZoomIn");
+    const zoomValue=document.getElementById("pdfZoomValue");
+    if(pageInput){pageInput.value=String(activePdfPage);pageInput.max=String(total||1);pageInput.disabled=!total;}
+    if(count)count.textContent=total?String(total):"—";
+    if(prev)prev.disabled=!total||activePdfPage<=1;
+    if(next)next.disabled=!total||activePdfPage>=total;
+    if(zoomOut)zoomOut.disabled=!total||activePdfZoom<=0.65;
+    if(zoomIn)zoomIn.disabled=!total||activePdfZoom>=2.2;
+    if(zoomValue)zoomValue.textContent=Math.round(activePdfZoom*100)+"%";
+  }
+
+  async function renderPdfReaderPage(){
+    if(!activePdfDocument)return;
+    const token=activePdfToken;
+    const canvas=document.getElementById("pdfReaderCanvas");
+    const viewportNode=document.getElementById("pdfReaderViewport");
+    if(!canvas||!viewportNode)return;
+    try{
+      if(activePdfRenderTask){try{activePdfRenderTask.cancel();}catch(error){}}
+      const page=await activePdfDocument.getPage(activePdfPage);
+      if(token!==activePdfToken)return;
+      const base=page.getViewport({scale:1});
+      const availableWidth=Math.max(260,viewportNode.clientWidth-32);
+      const fitScale=Math.min(1.6,availableWidth/base.width);
+      const viewport=page.getViewport({scale:fitScale*activePdfZoom});
+      const outputScale=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=Math.floor(viewport.width*outputScale);
+      canvas.height=Math.floor(viewport.height*outputScale);
+      canvas.style.width=Math.floor(viewport.width)+"px";
+      canvas.style.height=Math.floor(viewport.height)+"px";
+      const context=canvas.getContext("2d",{alpha:false});
+      context.setTransform(outputScale,0,0,outputScale,0,0);
+      activePdfRenderTask=page.render({canvasContext:context,viewport});
+      await activePdfRenderTask.promise;
+      if(token!==activePdfToken)return;
+      setPdfReaderStatus("A ler: "+activePdfTitle+" · Página "+activePdfPage+" de "+activePdfDocument.numPages+".");
+      updatePdfReaderControls();
+    }catch(error){
+      if(error&&error.name==="RenderingCancelledException")return;
+      setPdfReaderStatus("Não foi possível apresentar esta página do PDF. Tente novamente.",true);
+      console.warn("84 Books: erro ao desenhar página PDF.",error);
+    }
+  }
+
+  async function openPdfReader(detail){
+    const reader=document.getElementById("bookPdfReader");
+    if(!reader)return;
+    reader.hidden=false;
+    reader.scrollIntoView({behavior:"smooth",block:"start"});
+    activePdfTitle=String(detail.title||"Livro");
+    const titleNode=document.getElementById("pdfReaderTitle");
+    if(titleNode)titleNode.textContent=activePdfTitle;
+    if(!currentUser){
+      setPdfReaderStatus("Inicie sessão para solicitar acesso à leitura.",true);
+      window.dispatchEvent(new Event("84books:login-required"));
+      return;
+    }
+    if(!detail.path){
+      setPdfReaderStatus("Este livro ainda não tem um ficheiro PDF associado.",true);
+      return;
+    }
+    if(current84Role!=="admin"){
+      setPdfReaderStatus("A leitura protegida por anúncio recompensado ainda está a ser integrada. Não vamos simular anúncios nem libertar o PDF antes da confirmação real do fornecedor.",true);
+      return;
+    }
+    setPdfReaderStatus("A preparar o documento para leitura...");
+    try{
+      const {data,error}=await supabaseClient.storage.from("84books-files").createSignedUrl(detail.path,300);
+      if(error)throw error;
+      if(!data||!data.signedUrl)throw new Error("Não foi possível criar o acesso temporário ao PDF.");
+      const pdfjs=await loadPdfJs();
+      const loadingTask=pdfjs.getDocument({url:data.signedUrl});
+      const pdf=await loadingTask.promise;
+      if(activePdfDocument){try{await activePdfDocument.destroy();}catch(error){}}
+      activePdfDocument=pdf;
+      activePdfPage=1;
+      activePdfZoom=1;
+      activePdfToken++;
+      updatePdfReaderControls();
+      setPdfReaderStatus("PDF carregado. A preparar a primeira página...");
+      await renderPdfReaderPage();
+    }catch(error){
+      setPdfReaderStatus(error.message||"Não foi possível abrir este PDF.",true);
+      console.warn("84 Books: erro ao abrir PDF.",error);
+    }
+  }
+
+  async function closePdfReader(){
+    activePdfToken++;
+    if(activePdfRenderTask){try{activePdfRenderTask.cancel();}catch(error){}activePdfRenderTask=null;}
+    if(activePdfDocument){try{await activePdfDocument.destroy();}catch(error){}activePdfDocument=null;}
+    const reader=document.getElementById("bookPdfReader");
+    const canvas=document.getElementById("pdfReaderCanvas");
+    if(canvas){canvas.width=0;canvas.height=0;}
+    if(reader)reader.hidden=true;
+    updatePdfReaderControls();
+  }
+
+  window.addEventListener("84books:open-reader",event=>openPdfReader(event.detail||{}));
+  window.addEventListener("84books:close-reader",closePdfReader);
+  window.addEventListener("84books:reader-prev",()=>{
+    if(activePdfDocument&&activePdfPage>1){activePdfPage--;renderPdfReaderPage();}
+  });
+  window.addEventListener("84books:reader-next",()=>{
+    if(activePdfDocument&&activePdfPage<activePdfDocument.numPages){activePdfPage++;renderPdfReaderPage();}
+  });
+  window.addEventListener("84books:reader-page",event=>{
+    const page=Number(event.detail&&event.detail.page);
+    if(activePdfDocument&&Number.isInteger(page)&&page>=1&&page<=activePdfDocument.numPages){activePdfPage=page;renderPdfReaderPage();}
+    else updatePdfReaderControls();
+  });
+  window.addEventListener("84books:reader-zoom",event=>{
+    if(!activePdfDocument)return;
+    activePdfZoom=Math.max(0.65,Math.min(2.2,activePdfZoom+(Number(event.detail&&event.detail.direction)>0?0.15:-0.15)));
+    renderPdfReaderPage();
+    updatePdfReaderControls();
+  });
+  window.addEventListener("resize",()=>{
+    const reader=document.getElementById("bookPdfReader");
+    if(reader&&!reader.hidden&&activePdfDocument)renderPdfReaderPage();
+  });
 
   function showMessage(text, isError){
     message.textContent = text || "";
@@ -493,6 +677,7 @@ renderRoute();
     currentUser = user || null;
     current84User = currentUser;
     if(!user){
+      closePdfReader();
       welcomeCheckUserId=null;
       welcomeShownForUserId=null;
       hideFirstWelcome();
@@ -934,6 +1119,10 @@ renderRoute();
   window.addEventListener("84books:download-book",async event=>{
     const path=event.detail&&event.detail.path;
     if(!path||!currentUser){showMessage("Inicie sessão para descarregar este livro gratuito.",true);return;}
+    if(current84Role!=="admin"){
+      showMessage("O download com anúncio recompensado será ativado quando o fornecedor e a validação segura da recompensa estiverem ligados. O PDF continua protegido.",true);
+      return;
+    }
     try{
       const {data,error}=await supabaseClient.storage.from("84books-files").createSignedUrl(path,90);
       if(error)throw error;
