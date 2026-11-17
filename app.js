@@ -61,7 +61,7 @@ search.addEventListener("input", renderBooks);
 grid.addEventListener("click", event => {
   const favoriteButton = event.target.closest("[data-favorite]");
   if (favoriteButton) {
-    const id = Number(favoriteButton.dataset.favorite);
+    const id = parseBookId(favoriteButton.dataset.favorite);
     favorites.has(id) ? favorites.delete(id) : favorites.add(id);
     savePreference("84books-favorites", JSON.stringify([...favorites]));
     renderBooks();
@@ -70,15 +70,15 @@ grid.addEventListener("click", event => {
   const openButton = event.target.closest("[data-open]");
   const bookCard = event.target.closest("[data-book-card]");
   if (openButton || bookCard) {
-    const id = Number(openButton ? openButton.dataset.open : bookCard.dataset.bookCard);
-    navigate("livro/" + id);
+    const id = parseBookId(openButton ? openButton.dataset.open : bookCard.dataset.bookCard);
+    navigate("livro/" + encodeURIComponent(id));
   }
 });
 grid.addEventListener("keydown", event => {
   const card = event.target.closest("[data-book-card]");
   if (card && (event.key === "Enter" || event.key === " ")) {
     event.preventDefault();
-    navigate("livro/" + Number(card.dataset.bookCard));
+    navigate("livro/" + encodeURIComponent(parseBookId(card.dataset.bookCard)));
   }
 });
 function escapeHTML(value){
@@ -87,31 +87,32 @@ function escapeHTML(value){
   }[char]));
 }
 function renderBookDetail(id){
-  const book=books.find(item=>item.id===Number(id));
+  const book=books.find(item=>item.id===parseBookId(id));
   const container=document.getElementById("bookDetailContent");
   if(!book||!container){navigate("biblioteca");return;}
-  const tag=book.type==="gratuito"?"Gratuito":book.type==="pago"?"Pago · acesso em preparação":"Em preparação";
+  const tag=book.type==="gratuito"?"Gratuito":book.type==="pago"?"Pago · compra em preparação":"Em preparação";
   const accessNote=book.type==="gratuito"
-    ?"Esta página apresenta uma amostra demonstrativa. O ficheiro integral será disponibilizado quando a edição oficial estiver publicada."
+    ?"O livro gratuito poderá ser descarregado quando existir um PDF associado à publicação."
     :book.type==="pago"
-      ?"Este título está no catálogo demonstrativo. O preço, a compra e o acesso integral serão ativados quando a publicação estiver pronta."
+      ?"Este título está no catálogo. A compra e o acesso integral serão ativados numa próxima etapa."
       :"A equipa editorial ainda está a preparar esta publicação. Volte mais tarde para conhecer as novidades.";
-  container.innerHTML=`
-    <div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>
-    <div class="book-detail-layout">
-      <div class="detail-cover-wrap"><div class="cover-art ${escapeHTML(book.tone)}"><small>84 BOOKS PUBLISHING</small><strong>${escapeHTML(book.title)}</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div></div>
-      <div class="book-detail-copy">
-        <span class="detail-category">${escapeHTML(book.category)}</span><span class="detail-status">${escapeHTML(tag)}</span>
-        <h1>${escapeHTML(book.title)}</h1><p class="detail-author">Por ${escapeHTML(book.author)}</p>
-        <p class="detail-description">${escapeHTML(book.excerpt.split("\n\n")[0])}</p>
-        <div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>${escapeHTML(book.price)}</strong></div>
-        <div class="detail-actions">
-          ${book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>'}
-          <button class="detail-favorite" id="detailFavorite" type="button">${favorites.has(book.id)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos"}</button>
-        </div><p class="detail-note">${escapeHTML(accessNote)}</p>
-      </div>
-    </div>
-    <section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma demonstração do leitor. O conteúdo integral será publicado pela editora quando estiver disponível.</p></section>`;
+  const cover=book.coverUrl
+    ?'<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
+    :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
+  const description=book.description||book.excerpt||"Uma publicação da 84 Books Publishing.";
+  const canDownload=book.type==="gratuito"&&!!book.filePath;
+  container.innerHTML=
+    '<div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>'+
+    '<div class="book-detail-layout"><div class="detail-cover-wrap">'+cover+'</div><div class="book-detail-copy">'+
+    '<span class="detail-category">'+escapeHTML(book.category||"Geral")+'</span><span class="detail-status">'+escapeHTML(tag)+'</span>'+
+    '<h1>'+escapeHTML(book.title)+'</h1><p class="detail-author">Por '+escapeHTML(book.author)+'</p>'+
+    '<p class="detail-description">'+escapeHTML(description)+'</p>'+
+    '<div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>'+(book.type==="gratuito"?"Gratuito":book.type==="pago"?(Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago"):"Em preparação")+'</strong></div>'+
+    '<div class="detail-actions">'+(book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>')+
+    (canDownload?'<button class="detail-favorite" id="detailDownload" type="button">↓ Descarregar PDF</button>':"")+
+    '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button></div>'+
+    '<p class="detail-note">'+escapeHTML(accessNote)+'</p></div></div>'+
+    '<section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma amostra disponibilizada pela editora.</p></section>';
   const back=document.getElementById("detailBack");
   if(back)back.addEventListener("click",()=>navigate("biblioteca"));
   const previewButton=document.getElementById("detailPreviewToggle");
@@ -122,14 +123,17 @@ function renderBookDetail(id){
     if(opening)preview.scrollIntoView({behavior:"smooth",block:"start"});
   });
   const previewText=document.getElementById("detailPreviewText");
-  if(previewText)previewText.textContent=book.excerpt;
+  if(previewText)previewText.textContent=book.previewText||book.excerpt||description;
   const favoriteButton=document.getElementById("detailFavorite");
   if(favoriteButton)favoriteButton.addEventListener("click",()=>{
-    favorites.has(book.id)?favorites.delete(book.id):favorites.add(book.id);
+    const key=bookKey(book.id);
+    favorites.has(key)?favorites.delete(key):favorites.add(key);
     savePreference("84books-favorites",JSON.stringify([...favorites]));
-    favoriteButton.textContent=favorites.has(book.id)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos";
+    favoriteButton.textContent=favorites.has(key)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos";
     renderBooks();
   });
+  const downloadButton=document.getElementById("detailDownload");
+  if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
 }
 let current84User=null,authReady=false;
 function navigate(path){
