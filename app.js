@@ -138,7 +138,8 @@ function parseRoute(){
   const parts=raw.split("/").filter(Boolean);
   if(parts[0]==="livro"&&parts[1])return{page:"livro",id:Number(parts[1])};
   if(parts[0]==="membros")return{page:"membros",tab:parts[1]||"profile"};
-  const known=["inicio","boas-vindas","biblioteca","sobre","contacto"];
+  if(parts[0]==="favoritos"){activeFilter="favoritos";return{page:"biblioteca",fromFavorites:true};}
+  const known=["inicio","boas-vindas","biblioteca","comunidade","sobre","contacto"];
   return{page:known.includes(parts[0])?parts[0]:"inicio"};
 }
 function renderRoute(){
@@ -149,20 +150,26 @@ function renderRoute(){
     return;
   }
   document.querySelectorAll("[data-page]").forEach(page=>page.hidden=page.dataset.page!==route.page);
+  if(route.page==="biblioteca"){
+    document.querySelectorAll(".filter-chip").forEach(chip=>chip.classList.toggle("selected",chip.dataset.filter===activeFilter));
+    renderBooks();
+  }
+  const routeSiteMenu=document.getElementById("siteMenu"),routeMenuToggle=document.getElementById("menuToggle");
+  if(routeSiteMenu)routeSiteMenu.hidden=true;
+  if(routeMenuToggle)routeMenuToggle.setAttribute("aria-expanded","false");
   document.querySelectorAll("[data-route]").forEach(link=>{
     const activePage=route.page==="livro"?"biblioteca":route.page;
     link.classList.toggle("active",link.dataset.route===activePage);
   });
-  const menuToggle=document.getElementById("menuToggle"),mainNav=document.getElementById("mainNav");
+  const mainNav=document.getElementById("mainNav");
   if(mainNav)mainNav.classList.remove("open");
-  if(menuToggle)menuToggle.setAttribute("aria-expanded","false");
   if(route.page==="livro")renderBookDetail(route.id);
   if(route.page==="membros"){
     const allowed=["profile","library","community"],tab=allowed.includes(route.tab)?route.tab:"profile";
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
   }
-  const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
+  const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",comunidade:"Comunidade",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
   const book=route.page==="livro"?books.find(item=>item.id===route.id):null;
   document.title=book?book.title+" | 84 Books Publishing":(titles[route.page]||"84 Books Publishing")+" | 84 Books Publishing";
   window.scrollTo(0,0);
@@ -170,14 +177,21 @@ function renderRoute(){
 window.addEventListener("hashchange",renderRoute);
 document.querySelectorAll("[data-member-tab]").forEach(tab=>tab.addEventListener("click",()=>navigate("membros/"+tab.dataset.memberTab)));
 const menuToggle = document.getElementById("menuToggle");
-const mainNav = document.getElementById("mainNav");
+const siteMenu = document.getElementById("siteMenu");
 menuToggle.addEventListener("click", () => {
-  const open = mainNav.classList.toggle("open");
+  const open = siteMenu.hidden;
+  siteMenu.hidden = !open;
   menuToggle.setAttribute("aria-expanded", String(open));
 });
-mainNav.addEventListener("click", event => {
-  if (event.target.closest("a")) {
-    mainNav.classList.remove("open");
+siteMenu.addEventListener("click", event => {
+  if(event.target.closest("a")){
+    siteMenu.hidden=true;
+    menuToggle.setAttribute("aria-expanded","false");
+  }
+});
+document.addEventListener("click",event=>{
+  if(!event.target.closest(".site-header") && !siteMenu.hidden){
+    siteMenu.hidden=true;
     menuToggle.setAttribute("aria-expanded","false");
   }
 });
