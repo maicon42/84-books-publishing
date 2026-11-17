@@ -241,7 +241,7 @@ function renderBookDetail(id){
   const downloadButton=document.getElementById("detailDownload");
   if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
 }
-let current84User=null,authReady=false,current84Role="reader",welcomeCheckUserId=null;
+let current84User=null,authReady=false,current84Role="reader",welcomeCheckUserId=null,welcomeShownForUserId=null;
 function navigate(path){
   const target="#/"+String(path||"inicio").replace(/^\/+/, "");
   if(window.location.hash===target)renderRoute();else window.location.hash=target;
@@ -258,6 +258,7 @@ function parseRoute(){
 }
 function renderRoute(){
   const route=parseRoute();
+  if(route.page!=="inicio")hideFirstWelcome();
   if(route.page==="membros"&&authReady&&!current84User){
     window.location.hash="#/inicio";
     window.dispatchEvent(new Event("84books:login-required"));
@@ -461,8 +462,11 @@ renderRoute();
     current84User = currentUser;
     if(!user){
       welcomeCheckUserId=null;
+      welcomeShownForUserId=null;
       hideFirstWelcome();
     }else if(previousUserId!==user.id){
+      welcomeCheckUserId=null;
+      welcomeShownForUserId=null;
       hideFirstWelcome();
     }
     form.hidden = !!user;
@@ -570,7 +574,7 @@ renderRoute();
     renderHomeGreeting(firstWelcomeName);
     if(profile.welcome_seen_at){
       welcomeCheckUserId=user.id;
-      hideFirstWelcome();
+      if(welcomeShownForUserId!==user.id)hideFirstWelcome();
     }else if(welcomeCheckUserId!==user.id){
       welcomeCheckUserId=user.id;
       const {data:welcomeMark,error:welcomeMarkError}=await supabaseClient
@@ -587,6 +591,7 @@ renderRoute();
           welcomeCheckUserId=null;
         }
       }else if(welcomeMark&&current84User&&current84User.id===user.id){
+        welcomeShownForUserId=user.id;
         const welcomePanel=document.getElementById("homeWelcomePanel");
         if(welcomePanel)welcomePanel.hidden=false;
       }else{
