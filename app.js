@@ -92,3 +92,23 @@ mainNav.addEventListener("click", event => {
 });
 document.getElementById("year").textContent = new Date().getFullYear();
 renderBooks();
+
+// Alternância de tema: guarda a preferência neste dispositivo.
+const themeToggle = document.getElementById("themeToggle");
+const themeIcon = document.getElementById("themeIcon");
+const themeLabel = document.getElementById("themeLabel");
+function applyTheme(theme){
+  document.body.dataset.theme = theme;
+  const light = theme === "light";
+  themeIcon.textContent = light ? "☾" : "☀";
+  themeLabel.textContent = light ? "Modo escuro" : "Modo claro";
+  themeToggle.setAttribute("aria-label", light ? "Ativar modo escuro" : "Ativar modo claro");
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", light ? "#fffdfa" : "#090b11");
+}
+const savedTheme = localStorage.getItem("84books-theme");
+applyTheme(savedTheme === "light" ? "light" : "dark");
+themeToggle.addEventListener("click", () => {
+  const next = document.body.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("84books-theme", next);
+  applyTheme(next);
+});
