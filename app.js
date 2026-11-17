@@ -26,6 +26,7 @@ const empty = document.getElementById("emptyState");
 
 function bookKey(id){return typeof id==="number"?id:String(id);}
 function parseBookId(value){return /^\d+$/.test(String(value))?Number(value):String(value);}
+function bookPriceLabel(book){if(typeof book.price==="string")return book.price;if(book.type==="gratuito")return "Grátis";if(book.type==="pago")return Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago";return "Em preparação";}
 function renderBooks(){
   const term = search.value.trim().toLocaleLowerCase("pt");
   const visible = books.filter(book => {
@@ -42,7 +43,7 @@ function renderBooks(){
     const cover = book.coverUrl
       ? '<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
       : '<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
-    const price = book.type==="gratuito"?"Grátis":book.type==="pago"?(Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago"):"Em preparação";
+    const price = bookPriceLabel(book);
     return '<article class="book-card" data-book-card="'+escapeHTML(book.id)+'" role="link" tabindex="0" aria-label="Abrir detalhes de '+escapeHTML(book.title)+'">'+
       '<div class="cover-wrap">'+cover+tag+
         '<button class="favorite-btn '+(isFavorite?"is-favorite":"")+'" data-favorite="'+escapeHTML(book.id)+'" aria-label="'+(isFavorite?"Remover dos favoritos":"Adicionar aos favoritos")+'">'+(isFavorite?"♥":"♡")+'</button>'+
@@ -100,14 +101,14 @@ function renderBookDetail(id){
     ?'<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
     :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
   const description=book.description||book.excerpt||"Uma publicação da 84 Books Publishing.";
-  const canDownload=book.type==="gratuito"&&!!book.filePath;
+  const canDownload=book.type==="gratuito"&&!!book.filePath&&!!current84User;
   container.innerHTML=
     '<div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>'+
     '<div class="book-detail-layout"><div class="detail-cover-wrap">'+cover+'</div><div class="book-detail-copy">'+
     '<span class="detail-category">'+escapeHTML(book.category||"Geral")+'</span><span class="detail-status">'+escapeHTML(tag)+'</span>'+
     '<h1>'+escapeHTML(book.title)+'</h1><p class="detail-author">Por '+escapeHTML(book.author)+'</p>'+
     '<p class="detail-description">'+escapeHTML(description)+'</p>'+
-    '<div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>'+(book.type==="gratuito"?"Gratuito":book.type==="pago"?(Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago"):"Em preparação")+'</strong></div>'+
+    '<div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>'+escapeHTML(bookPriceLabel(book))+'</strong></div>'+
     '<div class="detail-actions">'+(book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>')+
     (canDownload?'<button class="detail-favorite" id="detailDownload" type="button">↓ Descarregar PDF</button>':"")+
     '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button></div>'+
