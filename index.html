@@ -14,20 +14,35 @@
 <body>
   <header class="site-header">
     <a class="brand" href="#/inicio" aria-label="84 Books Publishing - início">
-      <span class="brand-mark">84</span>
-      <span class="brand-copy"><strong>BOOKS</strong><small>PUBLISHING</small></span>
+      <span class="brand-mark" aria-hidden="true"><span>84</span><i></i></span>
+      <span class="brand-copy"><strong>84 BOOKS</strong><small>PUBLISHING</small></span>
     </a>
-    <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
-    <nav class="main-nav" id="mainNav">
-      <a href="#/inicio" data-route="inicio" class="active">Início</a>
-      <a href="#/boas-vindas" data-route="boas-vindas">Boas-vindas</a>
-      <a href="#/biblioteca" data-route="biblioteca">Biblioteca</a>
-      <a href="#/sobre" data-route="sobre">Sobre nós</a>
-      <a href="#/contacto" data-route="contacto">Contacto</a>
+    <nav class="main-nav" id="mainNav" aria-label="Navegação principal">
+      <a href="#/inicio" data-route="inicio" class="active"><span class="nav-icon">⌂</span><span>Início</span></a>
+      <a href="#/biblioteca" data-route="biblioteca"><span class="nav-icon">▤</span><span>Biblioteca</span></a>
+      <a href="#/comunidade" data-route="comunidade"><span class="nav-icon">◎</span><span>Comunidade</span></a>
+      <a href="#/membros/profile" data-route="membros"><span class="nav-icon">♙</span><span>Perfil</span></a>
     </nav>
-    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo claro"><span class="theme-icon" id="themeIcon">☀</span><span class="theme-label" id="themeLabel">Modo claro</span></button>
-    <button class="account-trigger" id="accountOpen" type="button">Entrar / Criar conta</button>
-    <a class="header-action" href="#/biblioteca">Explorar livros <span>↗</span></a>
+    <div class="header-tools">
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo claro"><span class="theme-icon" id="themeIcon">☀</span><span class="theme-label" id="themeLabel">Modo claro</span></button>
+      <button class="account-trigger" id="accountOpen" type="button">Entrar / Criar conta</button>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="siteMenu"><span>☰</span><small>Menu</small></button>
+    </div>
+    <div class="site-menu-panel" id="siteMenu" hidden>
+      <div class="site-menu-heading"><strong>Menu da 84 Books</strong><span>Explore todas as áreas</span></div>
+      <a href="#/inicio"><span>⌂</span><b>Início</b></a>
+      <a href="#/biblioteca"><span>▤</span><b>Biblioteca</b></a>
+      <a href="#/comunidade"><span>◎</span><b>Comunidade</b></a>
+      <a href="#/membros/profile"><span>♙</span><b>Meu perfil</b></a>
+      <a href="#/favoritos"><span>♥</span><b>Meus favoritos</b></a>
+      <div class="site-menu-divider"></div>
+      <div class="site-menu-heading"><strong>Mais opções</strong></div>
+      <a href="#/sobre"><span>ⓘ</span><b>Sobre a editora</b></a>
+      <a href="#/contacto"><span>✉</span><b>Contacto e ajuda</b></a>
+      <div class="site-menu-soon"><span>↓ Downloads</span><small>Em preparação</small></div>
+      <div class="site-menu-soon"><span>♢ Notificações</span><small>Em preparação</small></div>
+      <div class="site-menu-soon"><span>⚙ Definições</span><small>Em preparação</small></div>
+    </div>
   </header>
 
   <main id="appMain">
@@ -123,6 +138,18 @@
       <a class="button button-light" href="mailto:contacto@84bookspublishing.com?subject=Novidades%2084%20Books">Entrar em contacto <span>↗</span></a>
     </section>
 
+  </section>
+  <section class="app-page community-page section-wrap" id="page-community" data-page="comunidade" hidden>
+    <div class="community-welcome">
+      <div class="eyebrow dark"><span></span> COMUNIDADE 84 BOOKS</div>
+      <h1>Leitores, autores<br>e <em>ideias que se encontram.</em></h1>
+      <p>Um espaço para descobrir autores, conversar sobre livros e partilhar conhecimento. Estamos a preparar esta experiência para a comunidade.</p>
+    </div>
+    <div class="community-feature-grid">
+      <article><span>✦</span><small>PARTILHA</small><h2>Conversas sobre livros</h2><p>Debates, opiniões e recomendações de leitura.</p><b>Em preparação</b></article>
+      <article><span>✍</span><small>CRIADORES</small><h2>Autores e escritores</h2><p>Conheça quem está por trás das publicações.</p><b>Em preparação</b></article>
+      <article><span>♡</span><small>LEITORES</small><h2>Uma rede de leitores</h2><p>Descubra pessoas que partilham o gosto pela leitura.</p><b>Em preparação</b></article>
+    </div>
   </section>
   <section class="app-page book-detail-page section-wrap" id="page-book" data-page="livro" hidden>
     <div id="bookDetailContent"></div>
