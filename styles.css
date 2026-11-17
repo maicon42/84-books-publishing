@@ -266,3 +266,37 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
   .account-trigger{font-size:9px;padding:8px}
   .main-nav a{min-width:58px;font-size:8px}
 }
+
+
+/* Ajuste da navegação móvel: itens lado a lado e barra mais baixa */
+@media(max-width:760px){
+  .main-nav{
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:nowrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:2px;
+    min-height:42px;
+    padding:0 2px 4px;
+    overflow-x:auto;
+    overflow-y:hidden;
+  }
+  .main-nav a{
+    display:flex;
+    flex:0 0 auto;
+    flex-direction:row!important;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    min-width:0;
+    padding:9px 7px 10px;
+    font-size:10px;
+    white-space:nowrap;
+  }
+  .nav-icon{font-size:16px}
+}
+@media(max-width:380px){
+  .main-nav a{gap:3px;padding:8px 5px 9px;font-size:9px}
+  .nav-icon{font-size:15px}
+}
