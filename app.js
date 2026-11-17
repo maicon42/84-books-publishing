@@ -35,14 +35,14 @@ function renderBooks(){
   grid.innerHTML = visible.map(book => {
     const tag = book.type === "gratuito" ? '<span class="status-tag">Gratuito</span>' :
       book.type === "pago" ? '<span class="status-tag paid">Pago</span>' : '<span class="status-tag">Em breve</span>';
-    const buttonText = book.type === "breve" ? "Em preparação" : "Ver prévia →";
-    return `<article class="book-card">
+    const buttonText = "Ver detalhes →";
+    return `<article class="book-card" data-book-card="${book.id}" role="link" tabindex="0" aria-label="Abrir detalhes de ${book.title}">
       <div class="cover-wrap">
         <div class="cover-art ${book.tone}"><small>84 BOOKS PUBLISHING</small><strong>${book.title}</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>
         ${tag}
         <button class="favorite-btn ${favorites.has(book.id) ? "is-favorite" : ""}" data-favorite="${book.id}" aria-label="${favorites.has(book.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}">${favorites.has(book.id) ? "♥" : "♡"}</button>
       </div>
-      <div class="book-info"><span class="book-category">${book.category}</span><h3>${book.title}</h3><p class="book-author">Por ${book.author}</p><div class="book-bottom"><span class="book-price">${book.price}</span><button class="book-open" data-open="${book.id}" ${book.type === "breve" ? "disabled" : ""}>${buttonText}</button></div></div>
+      <div class="book-info"><span class="book-category">${book.category}</span><h3>${book.title}</h3><p class="book-author">Por ${book.author}</p><div class="book-bottom"><span class="book-price">${book.price}</span><button class="book-open" data-open="${book.id}">${buttonText}</button></div></div>
     </article>`;
   }).join("");
   empty.hidden = visible.length !== 0;
@@ -65,30 +65,110 @@ grid.addEventListener("click", event => {
     return;
   }
   const openButton = event.target.closest("[data-open]");
-  if (openButton) openReader(Number(openButton.dataset.open));
+  const bookCard = event.target.closest("[data-book-card]");
+  if (openButton || bookCard) {
+    const id = Number(openButton ? openButton.dataset.open : bookCard.dataset.bookCard);
+    navigate("livro/" + id);
+  }
 });
-function openReader(id){
-  const book = books.find(item => item.id === id);
-  if (!book || book.type === "breve") return;
-  document.getElementById("readerTitle").textContent = book.title;
-  document.getElementById("readerAuthor").textContent = "Por " + book.author + " · " + book.category;
-  document.getElementById("readerContent").textContent = book.excerpt;
-  const overlay = document.getElementById("readerOverlay");
-  overlay.classList.add("open");
-  overlay.setAttribute("aria-hidden","false");
-  document.body.style.overflow = "hidden";
-}
-function closeReader(){
-  const overlay = document.getElementById("readerOverlay");
-  overlay.classList.remove("open");
-  overlay.setAttribute("aria-hidden","true");
-  document.body.style.overflow = "";
-}
-document.getElementById("closeReader").addEventListener("click", closeReader);
-document.getElementById("readerOverlay").addEventListener("click", event => {
-  if (event.target.id === "readerOverlay") closeReader();
+grid.addEventListener("keydown", event => {
+  const card = event.target.closest("[data-book-card]");
+  if (card && (event.key === "Enter" || event.key === " ")) {
+    event.preventDefault();
+    navigate("livro/" + Number(card.dataset.bookCard));
+  }
 });
-document.addEventListener("keydown", event => { if (event.key === "Escape") closeReader(); });
+function escapeHTML(value){
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[char]));
+}
+function renderBookDetail(id){
+  const book=books.find(item=>item.id===Number(id));
+  const container=document.getElementById("bookDetailContent");
+  if(!book||!container){navigate("biblioteca");return;}
+  const tag=book.type==="gratuito"?"Gratuito":book.type==="pago"?"Pago · acesso em preparação":"Em preparação";
+  const accessNote=book.type==="gratuito"
+    ?"Esta página apresenta uma amostra demonstrativa. O ficheiro integral será disponibilizado quando a edição oficial estiver publicada."
+    :book.type==="pago"
+      ?"Este título está no catálogo demonstrativo. O preço, a compra e o acesso integral serão ativados quando a publicação estiver pronta."
+      :"A equipa editorial ainda está a preparar esta publicação. Volte mais tarde para conhecer as novidades.";
+  container.innerHTML=`
+    <div class="detail-topbar"><button class="detail-back" id="detailBack" type="button">← Voltar à biblioteca</button><span>84 BOOKS PUBLISHING / CATÁLOGO</span></div>
+    <div class="book-detail-layout">
+      <div class="detail-cover-wrap"><div class="cover-art ${escapeHTML(book.tone)}"><small>84 BOOKS PUBLISHING</small><strong>${escapeHTML(book.title)}</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div></div>
+      <div class="book-detail-copy">
+        <span class="detail-category">${escapeHTML(book.category)}</span><span class="detail-status">${escapeHTML(tag)}</span>
+        <h1>${escapeHTML(book.title)}</h1><p class="detail-author">Por ${escapeHTML(book.author)}</p>
+        <p class="detail-description">${escapeHTML(book.excerpt.split("\\n\\n")[0])}</p>
+        <div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>${escapeHTML(book.price)}</strong></div>
+        <div class="detail-actions">
+          ${book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>'}
+          <button class="detail-favorite" id="detailFavorite" type="button">${favorites.has(book.id)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos"}</button>
+        </div><p class="detail-note">${escapeHTML(accessNote)}</p>
+      </div>
+    </div>
+    <section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma demonstração do leitor. O conteúdo integral será publicado pela editora quando estiver disponível.</p></section>`;
+  const back=document.getElementById("detailBack");
+  if(back)back.addEventListener("click",()=>navigate("biblioteca"));
+  const previewButton=document.getElementById("detailPreviewToggle");
+  if(previewButton)previewButton.addEventListener("click",()=>{
+    const preview=document.getElementById("detailPreview"),opening=preview.hidden;
+    preview.hidden=!opening;
+    previewButton.innerHTML=opening?"Fechar prévia <span>↑</span>":"Ler prévia <span>→</span>";
+    if(opening)preview.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  const previewText=document.getElementById("detailPreviewText");
+  if(previewText)previewText.textContent=book.excerpt;
+  const favoriteButton=document.getElementById("detailFavorite");
+  if(favoriteButton)favoriteButton.addEventListener("click",()=>{
+    favorites.has(book.id)?favorites.delete(book.id):favorites.add(book.id);
+    savePreference("84books-favorites",JSON.stringify([...favorites]));
+    favoriteButton.textContent=favorites.has(book.id)?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos";
+    renderBooks();
+  });
+}
+let current84User=null,authReady=false;
+function navigate(path){
+  const target="#/"+String(path||"inicio").replace(/^\/+/, "");
+  if(window.location.hash===target)renderRoute();else window.location.hash=target;
+}
+function parseRoute(){
+  const raw=window.location.hash.startsWith("#/")?window.location.hash.slice(2):"inicio";
+  const parts=raw.split("/").filter(Boolean);
+  if(parts[0]==="livro"&&parts[1])return{page:"livro",id:Number(parts[1])};
+  if(parts[0]==="membros")return{page:"membros",tab:parts[1]||"profile"};
+  const known=["inicio","boas-vindas","biblioteca","sobre","contacto"];
+  return{page:known.includes(parts[0])?parts[0]:"inicio"};
+}
+function renderRoute(){
+  const route=parseRoute();
+  if(route.page==="membros"&&authReady&&!current84User){
+    window.location.hash="#/inicio";
+    window.dispatchEvent(new Event("84books:login-required"));
+    return;
+  }
+  document.querySelectorAll("[data-page]").forEach(page=>page.hidden=page.dataset.page!==route.page);
+  document.querySelectorAll("[data-route]").forEach(link=>{
+    const activePage=route.page==="livro"?"biblioteca":route.page;
+    link.classList.toggle("active",link.dataset.route===activePage);
+  });
+  const menuToggle=document.getElementById("menuToggle"),mainNav=document.getElementById("mainNav");
+  if(mainNav)mainNav.classList.remove("open");
+  if(menuToggle)menuToggle.setAttribute("aria-expanded","false");
+  if(route.page==="livro")renderBookDetail(route.id);
+  if(route.page==="membros"){
+    const allowed=["profile","library","community"],tab=allowed.includes(route.tab)?route.tab:"profile";
+    document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
+    document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
+  }
+  const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
+  const book=route.page==="livro"?books.find(item=>item.id===route.id):null;
+  document.title=book?book.title+" | 84 Books Publishing":(titles[route.page]||"84 Books Publishing")+" | 84 Books Publishing";
+  window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",renderRoute);
+document.querySelectorAll("[data-member-tab]").forEach(tab=>tab.addEventListener("click",()=>navigate("membros/"+tab.dataset.memberTab)));
 const menuToggle = document.getElementById("menuToggle");
 const mainNav = document.getElementById("mainNav");
 menuToggle.addEventListener("click", () => {
@@ -103,6 +183,7 @@ mainNav.addEventListener("click", event => {
 });
 document.getElementById("year").textContent = new Date().getFullYear();
 renderBooks();
+renderRoute();
 
 // Alternância de tema — tratamento reforçado para telemóveis.
 (function setup84Theme(){
@@ -194,6 +275,7 @@ renderBooks();
   function renderSession(session){
     const user = session && session.user;
     currentUser = user || null;
+    current84User = currentUser;
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
     resendButton.hidden = !!user || mode === "signup";
@@ -212,7 +294,7 @@ renderBooks();
     if(!user) return;
     memberArea.hidden = false;
     hideOverlay();
-    memberArea.scrollIntoView({behavior:"smooth",block:"start"});
+    navigate("membros/profile");
     await loadMemberProfile(user);
   }
 
@@ -292,10 +374,8 @@ renderBooks();
     }
   });
 
-  memberHome.addEventListener("click",()=>{
-    memberArea.hidden=true;
-    window.scrollTo({top:0,behavior:"smooth"});
-  });
+  memberHome.addEventListener("click",()=>navigate("inicio"));
+  window.addEventListener("84books:login-required",()=>{setMode("login");showOverlay();showMessage("Inicie sessão para entrar na sua área de membro.");});
   if (!window.supabase || !window.supabase.createClient) {
     showMessage("Não foi possível carregar o serviço de contas. Atualize a página e tente novamente.",true);
     return;
@@ -387,17 +467,14 @@ renderBooks();
     setMode("login");
     showMessage("Terminou a sessão com sucesso.");
     hideOverlay();
-    window.scrollTo({top:0,behavior:"smooth"});
+    navigate("inicio");
   }
   signOutButton.addEventListener("click",()=>performSignOut(signOutButton));
   memberSignOut.addEventListener("click",()=>performSignOut(memberSignOut));
   supabaseClient.auth.onAuthStateChange((event,session)=>{
-    renderSession(session);
-    if(event==="SIGNED_IN" && session){
-      hideOverlay();
-      memberArea.hidden=true;
-      window.scrollTo({top:0,behavior:"smooth"});
-    }
+    renderSession(session); authReady=true;
+    if(event==="SIGNED_IN" && session){hideOverlay();memberArea.hidden=true;navigate("inicio");}
+    else renderRoute();
   });
-  supabaseClient.auth.getSession().then(({data})=>renderSession(data.session));
+  supabaseClient.auth.getSession().then(({data})=>{renderSession(data.session);authReady=true;renderRoute();});
 })();
