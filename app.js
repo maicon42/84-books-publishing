@@ -155,6 +155,25 @@ renderBooks();
   const sessionPanel = document.getElementById("accountSession");
   const welcome = document.getElementById("accountWelcome");
   const signOutButton = document.getElementById("signOutButton");
+  const memberArea = document.getElementById("memberArea");
+  const memberName = document.getElementById("memberName");
+  const memberHome = document.getElementById("memberHome");
+  const memberSignOut = document.getElementById("memberSignOut");
+  const profileForm = document.getElementById("profileForm");
+  const profileMessage = document.getElementById("profileMessage");
+  const profileSave = document.getElementById("profileSave");
+  const profileFields = {
+    fullName: document.getElementById("profileFullName"),
+    displayName: document.getElementById("profileDisplayName"),
+    country: document.getElementById("profileCountry"),
+    dialCode: document.getElementById("profileDialCode"),
+    phone: document.getElementById("profilePhone"),
+    gender: document.getElementById("profileGender"),
+    birthDate: document.getElementById("profileBirthDate"),
+    type: document.getElementById("profileType"),
+    bio: document.getElementById("profileBio")
+  };
+  let currentUser = null;
   let mode = "login";
   let supabaseClient = null;
   function showMessage(text, isError){ message.textContent = text || ""; message.classList.toggle("error",!!isError); }
@@ -174,26 +193,124 @@ renderBooks();
   function hideOverlay(){ overlay.classList.remove("open"); overlay.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
   function renderSession(session){
     const user = session && session.user;
+    currentUser = user || null;
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
     resendButton.hidden = !!user || mode === "signup";
-    sessionPanel.hidden = !user;
-    openButton.textContent = user ? "A minha conta" : "Entrar / Criar conta";
+    sessionPanel.hidden = true;
+    openButton.textContent = user ? "Minha área" : "Entrar / Criar conta";
     if(user){
       const name = user.user_metadata && user.user_metadata.full_name;
-      welcome.textContent = "Sessão iniciada como " + (name || user.email || "leitor") + ". A sua conta está ligada à 84 Books Publishing.";
+      welcome.textContent = "Sessão iniciada como " + (name || user.email || "leitor") + ".";
       showMessage("");
+    } else {
+      memberArea.hidden = true;
     }
   }
+
+  async function openMemberArea(user){
+    if(!user) return;
+    memberArea.hidden = false;
+    hideOverlay();
+    memberArea.scrollIntoView({behavior:"smooth",block:"start"});
+    await loadMemberProfile(user);
+  }
+
+  async function loadMemberProfile(user){
+    profileMessage.textContent = "A carregar o seu perfil...";
+    const {data,error} = await supabaseClient
+      .from("profiles")
+      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio")
+      .eq("id",user.id)
+      .maybeSingle();
+    if(error){
+      profileMessage.textContent = "O perfil ainda precisa da atualização da base de dados. Execute o ficheiro supabase/member-area.sql no SQL Editor.";
+      profileMessage.classList.add("error");
+      const metaName = user.user_metadata && user.user_metadata.full_name;
+      profileFields.fullName.value = metaName || "";
+      memberName.textContent = metaName || "leitor";
+      return;
+    }
+    profileMessage.textContent = "";
+    profileMessage.classList.remove("error");
+    const profile = data || {};
+    profileFields.fullName.value = profile.full_name || (user.user_metadata && user.user_metadata.full_name) || "";
+    profileFields.displayName.value = profile.display_name || "";
+    profileFields.country.value = profile.country || "";
+    profileFields.gender.value = profile.gender || "";
+    profileFields.birthDate.value = profile.birth_date || "";
+    profileFields.type.value = profile.profile_type || "reader";
+    profileFields.bio.value = profile.bio || "";
+    const phone = profile.phone || "";
+    const phoneMatch = phone.match(/^(\+\d+)\s*(.*)$/);
+    if(phoneMatch){
+      if([...profileFields.dialCode.options].some(option => option.value === phoneMatch[1])) profileFields.dialCode.value = phoneMatch[1];
+      profileFields.phone.value = phoneMatch[2];
+    } else {
+      profileFields.phone.value = phone;
+    }
+    memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
+  }
+
+  document.querySelectorAll("[data-member-tab]").forEach(tab => {
+    tab.addEventListener("click",()=>{
+      document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item===tab));
+      document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab.dataset.memberTab);
+    });
+  });
+
+  profileForm.addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(!currentUser){profileMessage.textContent="Inicie sessão para editar o seu perfil.";return;}
+    profileSave.disabled=true;
+    profileSave.textContent="A guardar...";
+    profileMessage.classList.remove("error");
+    const phoneNumber = profileFields.phone.value.trim();
+    const fullPhone = phoneNumber ? profileFields.dialCode.value + " " + phoneNumber : "";
+    const updates = {
+      full_name: profileFields.fullName.value.trim(),
+      display_name: profileFields.displayName.value.trim(),
+      phone: fullPhone,
+      country: profileFields.country.value,
+      gender: profileFields.gender.value,
+      birth_date: profileFields.birthDate.value || null,
+      profile_type: profileFields.type.value,
+      bio: profileFields.bio.value.trim(),
+      updated_at: new Date().toISOString()
+    };
+    try{
+      const {error} = await supabaseClient.from("profiles").update(updates).eq("id",currentUser.id);
+      if(error) throw error;
+      memberName.textContent = updates.display_name || updates.full_name || "leitor";
+      profileMessage.textContent = "Perfil guardado com sucesso.";
+    }catch(error){
+      profileMessage.textContent = error.message || "Não foi possível guardar o perfil.";
+      profileMessage.classList.add("error");
+    }finally{
+      profileSave.disabled=false;
+      profileSave.textContent="Guardar perfil";
+    }
+  });
+
+  memberHome.addEventListener("click",()=>{
+    memberArea.hidden=true;
+    window.scrollTo({top:0,behavior:"smooth"});
+  });
   if (!window.supabase || !window.supabase.createClient) {
     showMessage("Não foi possível carregar o serviço de contas. Atualize a página e tente novamente.",true);
     return;
   }
   supabaseClient = window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
   openButton.addEventListener("click",async()=>{
-    showOverlay();
     const result = await supabaseClient.auth.getSession();
-    renderSession(result.data ? result.data.session : null);
+    const session = result.data ? result.data.session : null;
+    renderSession(session);
+    if(session && session.user){
+      await openMemberArea(session.user);
+    }else{
+      setMode("login");
+      showOverlay();
+    }
   });
   closeButton.addEventListener("click",hideOverlay);
   overlay.addEventListener("click",event=>{if(event.target===overlay)hideOverlay();});
@@ -214,6 +331,9 @@ renderBooks();
         if(data.session){
           showMessage("Conta criada com sucesso! Já pode começar a utilizar a sua conta.");
           renderSession(data.session);
+          hideOverlay();
+          memberArea.hidden = true;
+          window.scrollTo({top:0,behavior:"smooth"});
         }else{
           showMessage("Conta criada! Verifique a sua caixa de e-mail e confirme o endereço antes de iniciar sessão.");
           resendButton.hidden = false;
@@ -223,6 +343,9 @@ renderBooks();
         if(error) throw error;
         showMessage("Sessão iniciada com sucesso.");
         renderSession(data.session);
+        hideOverlay();
+        memberArea.hidden = true;
+        window.scrollTo({top:0,behavior:"smooth"});
       }
     }catch(error){
       showMessage(error.message || "Ocorreu um erro. Tente novamente.",true);
@@ -254,13 +377,27 @@ renderBooks();
     }catch(error){showMessage(error.message || "Não foi possível enviar o pedido.",true);}
     finally{forgotButton.disabled=false;}
   });
-  signOutButton.addEventListener("click",async()=>{
-    signOutButton.disabled=true;
+  async function performSignOut(button){
+    button.disabled=true;
     const {error}=await supabaseClient.auth.signOut();
-    signOutButton.disabled=false;
+    button.disabled=false;
     if(error){showMessage(error.message,true);return;}
-    renderSession(null);setMode("login");showMessage("Terminou a sessão com sucesso.");
+    memberArea.hidden=true;
+    renderSession(null);
+    setMode("login");
+    showMessage("Terminou a sessão com sucesso.");
+    hideOverlay();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+  signOutButton.addEventListener("click",()=>performSignOut(signOutButton));
+  memberSignOut.addEventListener("click",()=>performSignOut(memberSignOut));
+  supabaseClient.auth.onAuthStateChange((event,session)=>{
+    renderSession(session);
+    if(event==="SIGNED_IN" && session){
+      hideOverlay();
+      memberArea.hidden=true;
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
   });
-  supabaseClient.auth.onAuthStateChange((_event,session)=>renderSession(session));
   supabaseClient.auth.getSession().then(({data})=>renderSession(data.session));
 })();
