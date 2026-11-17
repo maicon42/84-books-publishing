@@ -238,13 +238,14 @@ renderRoute();
 })();
 
 
-// 84 Books Publishing — autenticação real com Supabase
+// 84 Books Publishing — autenticação, catálogo e administração
 (function setup84SupabaseAuth(){
   const PROJECT_URL = "https://ruvtjfryrrbjtctgvwtc.supabase.co";
   const PUBLISHABLE_KEY = "sb_publishable_44W6KLQQbzEAbIdI2YZASg_uoJzm2-C";
   const openButton = document.getElementById("accountOpen");
   const overlay = document.getElementById("authOverlay");
   if (!openButton || !overlay) return;
+
   const closeButton = document.getElementById("authClose");
   const form = document.getElementById("authForm");
   const title = document.getElementById("authTitle");
@@ -259,13 +260,37 @@ renderRoute();
   const sessionPanel = document.getElementById("accountSession");
   const welcome = document.getElementById("accountWelcome");
   const signOutButton = document.getElementById("signOutButton");
+  const menuSignOut = document.getElementById("menuSignOut");
+  const adminMenuLink = document.getElementById("adminMenuLink");
+  const adminMemberTab = document.getElementById("adminMemberTab");
+  const roleBadge = document.getElementById("memberRoleBadge");
   const memberArea = document.getElementById("memberArea");
   const memberName = document.getElementById("memberName");
   const memberHome = document.getElementById("memberHome");
-  const memberSignOut = document.getElementById("memberSignOut");
   const profileForm = document.getElementById("profileForm");
   const profileMessage = document.getElementById("profileMessage");
   const profileSave = document.getElementById("profileSave");
+  const adminForm = document.getElementById("adminBookForm");
+  const adminList = document.getElementById("adminBooksList");
+  const adminMessage = document.getElementById("adminBookMessage");
+  const adminSave = document.getElementById("adminBookSave");
+  const adminFormTitle = document.getElementById("adminFormTitle");
+  const adminCancel = document.getElementById("adminBookCancel");
+  const adminFields = {
+    id:document.getElementById("adminBookId"),
+    coverPath:document.getElementById("adminBookCoverPath"),
+    filePath:document.getElementById("adminBookFilePath"),
+    title:document.getElementById("adminBookTitle"),
+    author:document.getElementById("adminBookAuthor"),
+    category:document.getElementById("adminBookCategory"),
+    type:document.getElementById("adminBookType"),
+    price:document.getElementById("adminBookPrice"),
+    status:document.getElementById("adminBookStatus"),
+    description:document.getElementById("adminBookDescription"),
+    preview:document.getElementById("adminBookPreview"),
+    cover:document.getElementById("adminBookCover"),
+    file:document.getElementById("adminBookFile")
+  };
   const profileFields = {
     fullName: document.getElementById("profileFullName"),
     displayName: document.getElementById("profileDisplayName"),
@@ -277,10 +302,27 @@ renderRoute();
     type: document.getElementById("profileType"),
     bio: document.getElementById("profileBio")
   };
+
   let currentUser = null;
   let mode = "login";
   let supabaseClient = null;
-  function showMessage(text, isError){ message.textContent = text || ""; message.classList.toggle("error",!!isError); }
+  let adminBookCache = [];
+
+  function showMessage(text, isError){
+    message.textContent = text || "";
+    message.classList.toggle("error",!!isError);
+  }
+  function showAdminMessage(text,isError){
+    adminMessage.textContent=text||"";
+    adminMessage.classList.toggle("error",!!isError);
+  }
+  function setAdminVisibility(){
+    const admin=current84Role==="admin"&&!!currentUser;
+    adminMenuLink.hidden=!admin;
+    adminMemberTab.hidden=!admin;
+    roleBadge.hidden=!admin;
+    menuSignOut.hidden=!currentUser;
+  }
   function setMode(nextMode){
     mode = nextMode;
     document.querySelectorAll("[data-auth-mode]").forEach(tab => tab.classList.toggle("active",tab.dataset.authMode===mode));
@@ -293,8 +335,16 @@ renderRoute();
     resendButton.hidden = true;
     showMessage("");
   }
-  function showOverlay(){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden"; }
-  function hideOverlay(){ overlay.classList.remove("open"); overlay.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
+  function showOverlay(){
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden","false");
+    document.body.style.overflow="hidden";
+  }
+  function hideOverlay(){
+    overlay.classList.remove("open");
+    overlay.setAttribute("aria-hidden","true");
+    document.body.style.overflow="";
+  }
   function renderSession(session){
     const user = session && session.user;
     currentUser = user || null;
@@ -310,26 +360,60 @@ renderRoute();
       showMessage("");
     } else {
       memberArea.hidden = true;
+      current84Role="reader";
     }
+    setAdminVisibility();
   }
 
-  async function openMemberArea(user){
-    if(!user) return;
-    memberArea.hidden = false;
-    hideOverlay();
-    navigate("membros/profile");
-    await loadMemberProfile(user);
+  async function loadPublicBooks(){
+    const {data,error}=await supabaseClient.from("books")
+      .select("id,title,author,category,description,preview_text,book_type,price,status,cover_path,file_path,created_at")
+      .eq("status","published")
+      .order("created_at",{ascending:false});
+    if(error){
+      console.warn("84 Books: catálogo remoto ainda não disponível.",error.message);
+      books=[...demoBooks];
+      renderBooks();
+      return;
+    }
+    const remote=(data||[]).map(row=>{
+      const coverResult=row.cover_path?supabaseClient.storage.from("84books-covers").getPublicUrl(row.cover_path):null;
+      return {
+        id:String(row.id),
+        title:row.title,
+        author:row.author,
+        category:row.category||"Geral",
+        description:row.description||"",
+        previewText:row.preview_text||"",
+        type:row.book_type,
+        price:Number(row.price||0),
+        priceLabel:row.book_type==="gratuito"?"Grátis":row.book_type==="pago"?(Number(row.price||0).toLocaleString("pt-AO")+" Kz"):"Em preparação",
+        status:row.status,
+        coverUrl:coverResult&&coverResult.data?coverResult.data.publicUrl:"",
+        filePath:row.file_path||"",
+        tone:"tone-one",
+        excerpt:row.preview_text||row.description||""
+      };
+    });
+    books=[...demoBooks,...remote];
+    renderBooks();
+    if(window.location.hash.startsWith("#/livro/")){
+      const id=decodeURIComponent(window.location.hash.split("/")[2]||"");
+      renderBookDetail(parseBookId(id));
+    }
   }
 
   async function loadMemberProfile(user){
     profileMessage.textContent = "A carregar o seu perfil...";
     const {data,error} = await supabaseClient
       .from("profiles")
-      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio")
+      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio, role")
       .eq("id",user.id)
       .maybeSingle();
     if(error){
-      profileMessage.textContent = "O perfil ainda precisa da atualização da base de dados. Execute o ficheiro supabase/member-area.sql no SQL Editor.";
+      current84Role="reader";
+      setAdminVisibility();
+      profileMessage.textContent = "Para ativar o perfil de administrador, execute o ficheiro supabase/admin-books.sql no SQL Editor do Supabase.";
       profileMessage.classList.add("error");
       const metaName = user.user_metadata && user.user_metadata.full_name;
       profileFields.fullName.value = metaName || "";
@@ -339,6 +423,8 @@ renderRoute();
     profileMessage.textContent = "";
     profileMessage.classList.remove("error");
     const profile = data || {};
+    current84Role=profile.role==="admin"?"admin":"reader";
+    setAdminVisibility();
     profileFields.fullName.value = profile.full_name || (user.user_metadata && user.user_metadata.full_name) || "";
     profileFields.displayName.value = profile.display_name || "";
     profileFields.country.value = profile.country || "";
@@ -357,7 +443,13 @@ renderRoute();
     memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
   }
 
-  // A navegação das abas da área de membro é controlada pelo router interno.
+  async function openMemberArea(user){
+    if(!user) return;
+    memberArea.hidden = false;
+    hideOverlay();
+    navigate("membros/profile");
+    await loadMemberProfile(user);
+  }
 
   profileForm.addEventListener("submit",async event=>{
     event.preventDefault();
@@ -392,13 +484,179 @@ renderRoute();
     }
   });
 
+  function resetAdminForm(){
+    adminForm.reset();
+    adminFields.id.value="";
+    adminFields.coverPath.value="";
+    adminFields.filePath.value="";
+    adminFields.price.value="0";
+    adminFields.type.value="gratuito";
+    adminFields.status.value="published";
+    adminFormTitle.textContent="Adicionar novo livro";
+    adminSave.textContent="Publicar livro";
+    adminCancel.hidden=true;
+    showAdminMessage("");
+  }
+
+  async function renderAdminBooks(){
+    if(current84Role!=="admin"||!currentUser)return;
+    adminList.innerHTML='<p class="admin-empty">A carregar as publicações...</p>';
+    const {data,error}=await supabaseClient.from("books")
+      .select("id,title,author,category,book_type,price,status,cover_path,file_path,description,preview_text")
+      .order("created_at",{ascending:false});
+    if(error){
+      adminList.innerHTML='<p class="admin-empty">Não foi possível carregar os livros. Confirme se executou supabase/admin-books.sql.</p>';
+      return;
+    }
+    adminBookCache=data||[];
+    if(!adminBookCache.length){
+      adminList.innerHTML='<p class="admin-empty">Ainda não existem livros publicados por si. Use o formulário acima para adicionar o primeiro.</p>';
+      return;
+    }
+    adminList.innerHTML=adminBookCache.map(book=>{
+      const state=book.status==="published"?"PUBLICADO":"RASCUNHO";
+      const type=book.book_type==="gratuito"?"Gratuito":book.book_type==="pago"?"Pago":"Em preparação";
+      return '<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(book.title)+'</strong><span>'+escapeHTML(book.author)+' · '+escapeHTML(book.category||"Geral")+' · '+type+'</span><span class="admin-book-status">'+state+'</span></div><div class="admin-book-actions"><button type="button" data-admin-edit="'+escapeHTML(book.id)+'">Editar</button><button type="button" class="admin-delete" data-admin-delete="'+escapeHTML(book.id)+'">Eliminar</button></div></article>';
+    }).join("");
+  }
+
+  async function uploadAdminFile(bucket,file){
+    if(!file)return null;
+    const cleanName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const path=currentUser.id+"/"+Date.now()+"-"+Math.random().toString(36).slice(2)+"-"+cleanName;
+    const {error}=await supabaseClient.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
+    if(error)throw error;
+    return path;
+  }
+
+  adminForm.addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(current84Role!=="admin"||!currentUser){showAdminMessage("Apenas o administrador pode publicar livros.",true);return;}
+    const coverFile=adminFields.cover.files[0]||null;
+    const pdfFile=adminFields.file.files[0]||null;
+    if(coverFile&&(!/^image\/(jpeg|png|webp)$/.test(coverFile.type)||coverFile.size>8*1024*1024)){
+      showAdminMessage("A capa deve ser JPG, PNG ou WEBP e ter no máximo 8 MB.",true);return;
+    }
+    if(pdfFile&&(pdfFile.type!=="application/pdf"||pdfFile.size>30*1024*1024)){
+      showAdminMessage("O livro deve estar em PDF e ter no máximo 30 MB.",true);return;
+    }
+    adminSave.disabled=true;
+    adminSave.textContent="A guardar...";
+    showAdminMessage("A preparar a publicação...");
+    const oldCover=adminFields.coverPath.value;
+    const oldFile=adminFields.filePath.value;
+    let newCover=oldCover,newFile=oldFile;
+    try{
+      if(coverFile)newCover=await uploadAdminFile("84books-covers",coverFile);
+      if(pdfFile)newFile=await uploadAdminFile("84books-files",pdfFile);
+      const payload={
+        title:adminFields.title.value.trim(),
+        author:adminFields.author.value.trim(),
+        category:adminFields.category.value.trim()||"Geral",
+        description:adminFields.description.value.trim(),
+        preview_text:adminFields.preview.value.trim(),
+        book_type:adminFields.type.value,
+        price:adminFields.type.value==="gratuito"?0:Number(adminFields.price.value||0),
+        status:adminFields.status.value,
+        cover_path:newCover||null,
+        file_path:newFile||null,
+        updated_at:new Date().toISOString()
+      };
+      const id=adminFields.id.value;
+      let result;
+      if(id){
+        result=await supabaseClient.from("books").update(payload).eq("id",id);
+      }else{
+        payload.created_by=currentUser.id;
+        result=await supabaseClient.from("books").insert(payload);
+      }
+      if(result.error)throw result.error;
+      if(oldCover&&newCover!==oldCover)await supabaseClient.storage.from("84books-covers").remove([oldCover]);
+      if(oldFile&&newFile!==oldFile)await supabaseClient.storage.from("84books-files").remove([oldFile]);
+      showAdminMessage(id?"Livro atualizado com sucesso.":"Livro publicado com sucesso.");
+      resetAdminForm();
+      await renderAdminBooks();
+      await loadPublicBooks();
+    }catch(error){
+      showAdminMessage(error.message||"Não foi possível guardar o livro.",true);
+    }finally{
+      adminSave.disabled=false;
+      adminSave.textContent=adminFields.id.value?"Guardar alterações":"Publicar livro";
+    }
+  });
+
+  adminList.addEventListener("click",async event=>{
+    const editButton=event.target.closest("[data-admin-edit]");
+    const deleteButton=event.target.closest("[data-admin-delete]");
+    if(editButton){
+      const book=adminBookCache.find(item=>String(item.id)===editButton.dataset.adminEdit);
+      if(!book)return;
+      adminFields.id.value=book.id;
+      adminFields.title.value=book.title||"";
+      adminFields.author.value=book.author||"";
+      adminFields.category.value=book.category||"";
+      adminFields.type.value=book.book_type||"gratuito";
+      adminFields.price.value=book.price||0;
+      adminFields.status.value=book.status||"published";
+      adminFields.description.value=book.description||"";
+      adminFields.preview.value=book.preview_text||"";
+      adminFields.coverPath.value=book.cover_path||"";
+      adminFields.filePath.value=book.file_path||"";
+      adminFields.cover.value="";
+      adminFields.file.value="";
+      adminFormTitle.textContent="Editar publicação";
+      adminSave.textContent="Guardar alterações";
+      adminCancel.hidden=false;
+      adminForm.scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
+    if(deleteButton){
+      const book=adminBookCache.find(item=>String(item.id)===deleteButton.dataset.adminDelete);
+      if(!book||!window.confirm('Tem a certeza de que pretende eliminar "'+book.title+'"?'))return;
+      deleteButton.disabled=true;
+      try{
+        const {error}=await supabaseClient.from("books").delete().eq("id",book.id);
+        if(error)throw error;
+        if(book.cover_path)await supabaseClient.storage.from("84books-covers").remove([book.cover_path]);
+        if(book.file_path)await supabaseClient.storage.from("84books-files").remove([book.file_path]);
+        showAdminMessage("Livro eliminado do catálogo.");
+        await renderAdminBooks();
+        await loadPublicBooks();
+      }catch(error){
+        showAdminMessage(error.message||"Não foi possível eliminar o livro.",true);
+        deleteButton.disabled=false;
+      }
+    }
+  });
+
+  adminCancel.addEventListener("click",resetAdminForm);
+  document.getElementById("adminRefreshBooks").addEventListener("click",renderAdminBooks);
+  adminMemberTab.addEventListener("click",renderAdminBooks);
+
+  window.addEventListener("84books:download-book",async event=>{
+    const path=event.detail&&event.detail.path;
+    if(!path||!currentUser){showMessage("Inicie sessão para descarregar este livro gratuito.",true);return;}
+    try{
+      const {data,error}=await supabaseClient.storage.from("84books-files").createSignedUrl(path,90);
+      if(error)throw error;
+      if(data&&data.signedUrl)window.open(data.signedUrl,"_blank","noopener");
+    }catch(error){showMessage(error.message||"Não foi possível preparar o PDF.",true);}
+  });
+
   memberHome.addEventListener("click",()=>navigate("inicio"));
-  window.addEventListener("84books:login-required",()=>{setMode("login");showOverlay();showMessage("Inicie sessão para entrar na sua área de membro.");});
+  window.addEventListener("84books:login-required",()=>{
+    setMode("login");
+    showOverlay();
+    showMessage("Inicie sessão para entrar na sua área de membro.");
+  });
+
   if (!window.supabase || !window.supabase.createClient) {
     showMessage("Não foi possível carregar o serviço de contas. Atualize a página e tente novamente.",true);
     return;
   }
   supabaseClient = window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
+  loadPublicBooks();
+
   openButton.addEventListener("click",async()=>{
     const result = await supabaseClient.auth.getSession();
     const session = result.data ? result.data.session : null;
@@ -410,10 +668,12 @@ renderRoute();
       showOverlay();
     }
   });
+  menuSignOut.addEventListener("click",()=>performSignOut(menuSignOut));
   closeButton.addEventListener("click",hideOverlay);
   overlay.addEventListener("click",event=>{if(event.target===overlay)hideOverlay();});
   document.addEventListener("keydown",event=>{if(event.key==="Escape" && overlay.classList.contains("open"))hideOverlay();});
   document.querySelectorAll("[data-auth-mode]").forEach(tab=>tab.addEventListener("click",()=>{setMode(tab.dataset.authMode);renderSession(null);}));
+
   form.addEventListener("submit",async event=>{
     event.preventDefault();
     const email=emailInput.value.trim();
@@ -451,6 +711,7 @@ renderRoute();
     }
     finally{submitButton.disabled=false;submitButton.textContent=mode==="signup"?"Criar a minha conta":"Entrar na minha conta";}
   });
+
   resendButton.addEventListener("click",async()=>{
     const email=emailInput.value.trim();
     if(!email){showMessage("Introduza o seu e-mail no campo acima.",true);emailInput.focus();return;}
@@ -464,6 +725,7 @@ renderRoute();
     }catch(error){showMessage(error.message || "Não foi possível reenviar a confirmação. Aguarde um pouco e tente novamente.",true);}
     finally{resendButton.disabled=false;resendButton.textContent=originalText;}
   });
+
   forgotButton.addEventListener("click",async()=>{
     const email=emailInput.value.trim();
     if(!email){showMessage("Introduza primeiro o seu e-mail no campo acima.",true);emailInput.focus();return;}
@@ -475,6 +737,7 @@ renderRoute();
     }catch(error){showMessage(error.message || "Não foi possível enviar o pedido.",true);}
     finally{forgotButton.disabled=false;}
   });
+
   async function performSignOut(button){
     button.disabled=true;
     const {error}=await supabaseClient.auth.signOut();
@@ -488,11 +751,33 @@ renderRoute();
     navigate("inicio");
   }
   signOutButton.addEventListener("click",()=>performSignOut(signOutButton));
-  memberSignOut.addEventListener("click",()=>performSignOut(memberSignOut));
+
   supabaseClient.auth.onAuthStateChange((event,session)=>{
-    renderSession(session); authReady=true;
-    if(event==="SIGNED_IN" && session){hideOverlay();memberArea.hidden=true;navigate("inicio");}
-    else renderRoute();
+    renderSession(session);
+    if(session&&session.user){
+      Promise.resolve().then(async()=>{
+        await loadMemberProfile(session.user);
+        authReady=true;
+        if(event==="SIGNED_IN"){
+          hideOverlay();
+          memberArea.hidden=true;
+          navigate("inicio");
+        }else{
+          renderRoute();
+        }
+      });
+    }else{
+      current84Role="reader";
+      setAdminVisibility();
+      authReady=true;
+      renderRoute();
+    }
   });
-  supabaseClient.auth.getSession().then(({data})=>{renderSession(data.session);authReady=true;renderRoute();});
+
+  supabaseClient.auth.getSession().then(async({data})=>{
+    renderSession(data.session);
+    if(data.session&&data.session.user)await loadMemberProfile(data.session.user);
+    authReady=true;
+    renderRoute();
+  });
 })();
