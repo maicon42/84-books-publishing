@@ -218,7 +218,29 @@ function renderBookDetail(id){
     (canDownload?'<button class="detail-favorite" id="detailDownload" type="button">↓ Descarregar PDF</button>':"")+
     '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button></div>'+
     '<p class="detail-note">'+escapeHTML(accessNote)+'</p></div></div>'+
-    '<section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma amostra disponibilizada pela editora.</p></section>';
+    '<section class="detail-preview" id="detailPreview" hidden><span class="detail-category">PRÉ-VISUALIZAÇÃO</span><h2>Abra as primeiras páginas.</h2><p id="detailPreviewText"></p><p class="detail-note">Esta é uma amostra disponibilizada pela editora.</p></section>'+
+    '<section class="book-feedback" aria-labelledby="bookFeedbackTitle">'+
+      '<div class="feedback-heading"><span class="detail-category">OPINIÕES DA COMUNIDADE</span><h2 id="bookFeedbackTitle">Comentários e avaliações</h2><p>Leia o que outros leitores acharam desta obra e partilhe a sua própria opinião.</p></div>'+
+      '<div class="feedback-summary"><div class="feedback-average" id="feedbackAverage">—</div><div class="feedback-summary-copy"><div class="feedback-stars" id="feedbackStars" aria-label="Sem avaliações">☆☆☆☆☆</div><p id="feedbackStats">A carregar opiniões...</p></div></div>'+
+      '<div class="book-reviews-list" id="bookReviewsList" aria-live="polite"><p class="feedback-empty">A carregar comentários...</p></div>'+
+      '<form class="book-review-form" id="bookReviewForm" data-book-id="'+escapeHTML(book.id)+'">'+
+        '<div><span class="detail-category">A SUA PARTICIPAÇÃO</span><h3 id="reviewFormHeading">Deixe a sua opinião</h3><p class="review-form-note">Pode comentar, avaliar de 0 a 5, ou fazer as duas coisas. Uma opinião por pessoa em cada livro; pode atualizá-la depois.</p></div>'+
+        '<label class="review-rating-label">A sua avaliação (0 a 5)</label>'+
+        '<div class="review-rating-options" role="group" aria-label="Escolher avaliação">'+
+          '<button type="button" class="review-rating-zero" data-review-rating="0" aria-label="Zero estrelas">0</button>'+
+          '<button type="button" data-review-rating="1" aria-label="Uma estrela">★</button>'+
+          '<button type="button" data-review-rating="2" aria-label="Duas estrelas">★</button>'+
+          '<button type="button" data-review-rating="3" aria-label="Três estrelas">★</button>'+
+          '<button type="button" data-review-rating="4" aria-label="Quatro estrelas">★</button>'+
+          '<button type="button" data-review-rating="5" aria-label="Cinco estrelas">★</button>'+
+        '</div>'+
+        '<input type="hidden" id="bookReviewRating" value="">'+
+        '<p class="review-rating-help" id="reviewRatingLabel">Ainda não selecionou uma classificação.</p>'+
+        '<label class="review-comment-label" for="bookReviewText">O seu comentário</label>'+
+        '<textarea id="bookReviewText" rows="4" maxlength="2000" placeholder="O que achou deste livro? O que mais gostou ou o que poderia melhorar?"></textarea>'+
+        '<div class="review-submit-row"><p class="review-submit-message" id="bookReviewMessage" role="status" aria-live="polite">Inicie sessão para publicar a sua opinião.</p><button class="button button-primary" id="bookReviewSubmit" type="submit">Publicar opinião <span>→</span></button></div>'+
+      '</form>'+
+    '</section>';
   const back=document.getElementById("detailBack");
   if(back)back.addEventListener("click",()=>navigate("biblioteca"));
   const previewButton=document.getElementById("detailPreviewToggle");
@@ -240,6 +262,16 @@ function renderBookDetail(id){
   });
   const downloadButton=document.getElementById("detailDownload");
   if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
+  const reviewForm=document.getElementById("bookReviewForm");
+  if(reviewForm){
+    reviewForm.querySelectorAll("[data-review-rating]").forEach(button=>button.addEventListener("click",()=>{
+      const value=button.dataset.reviewRating;
+      document.getElementById("bookReviewRating").value=value;
+      reviewForm.querySelectorAll("[data-review-rating]").forEach(item=>item.classList.toggle("selected",item===button));
+      document.getElementById("reviewRatingLabel").textContent=value+" de 5 estrelas selecionadas.";
+    }));
+  }
+  window.dispatchEvent(new CustomEvent("84books:load-reviews",{detail:{bookId:String(book.id)}}));
 }
 let current84User=null,authReady=false,current84Role="reader",welcomeCheckUserId=null,welcomeShownForUserId=null;
 function navigate(path){
@@ -530,6 +562,114 @@ renderRoute();
       renderBookDetail(parseBookId(id));
     }
   }
+
+  async function loadBookReviews(bookId){
+    const list=document.getElementById("bookReviewsList");
+    const averageNode=document.getElementById("feedbackAverage");
+    const starsNode=document.getElementById("feedbackStars");
+    const statsNode=document.getElementById("feedbackStats");
+    const form=document.getElementById("bookReviewForm");
+    if(!list||!averageNode||!starsNode||!statsNode||!form||form.dataset.bookId!==String(bookId))return;
+    list.innerHTML='<p class="feedback-empty">A carregar comentários...</p>';
+    const {data,error}=await supabaseClient.from("book_reviews")
+      .select("id,book_id,user_id,author_name,comment,rating,created_at,updated_at")
+      .eq("book_id",bookId)
+      .order("created_at",{ascending:false});
+    if(error){
+      list.innerHTML='<p class="feedback-empty">Não foi possível carregar as opiniões neste momento. Tente novamente.</p>';
+      statsNode.textContent="As opiniões ainda não estão disponíveis.";
+      console.warn("84 Books: erro ao carregar opiniões.",error.message);
+      return;
+    }
+    const reviews=data||[];
+    const comments=reviews.filter(item=>String(item.comment||"").trim().length>0);
+    const ratings=reviews.filter(item=>item.rating!==null&&item.rating!==undefined);
+    const average=ratings.length?ratings.reduce((sum,item)=>sum+Number(item.rating),0)/ratings.length:null;
+    averageNode.textContent=average===null?"—":average.toFixed(1).replace(".",",");
+    const rounded=average===null?0:Math.max(0,Math.min(5,Math.round(average)));
+    starsNode.textContent="★".repeat(rounded)+"☆".repeat(5-rounded);
+    starsNode.setAttribute("aria-label",average===null?"Sem avaliações":"Média de "+average.toFixed(1)+" em 5");
+    statsNode.textContent=comments.length+" "+(comments.length===1?"comentário":"comentários")+" · "+ratings.length+" "+(ratings.length===1?"avaliação":"avaliações");
+    if(!reviews.length){
+      list.innerHTML='<p class="feedback-empty">Este livro ainda não recebeu comentários. Seja a primeira pessoa a partilhar uma opinião.</p>';
+    }else{
+      list.innerHTML=reviews.map(item=>{
+        const date=item.created_at?new Date(item.created_at).toLocaleDateString("pt-AO",{day:"2-digit",month:"short",year:"numeric"}):"";
+        const rating=item.rating===null||item.rating===undefined?'<span class="review-no-rating">Sem avaliação</span>':'<span class="review-stars" aria-label="'+Number(item.rating)+' de 5 estrelas">'+"★".repeat(Number(item.rating))+"☆".repeat(5-Number(item.rating))+'</span><small>'+Number(item.rating)+'/5</small>';
+        const comment=String(item.comment||"").trim();
+        return '<article class="book-review-card"><div class="book-review-top"><strong>'+escapeHTML(item.author_name||"Leitor")+'</strong><time>'+escapeHTML(date)+'</time></div><div class="book-review-rating">'+rating+'</div><p>'+ (comment?escapeHTML(comment):'<span class="review-no-comment">O leitor deixou apenas uma avaliação.</span>') +'</p></article>';
+      }).join("");
+    }
+    const ownReview=currentUser?reviews.find(item=>item.user_id===currentUser.id):null;
+    const textField=document.getElementById("bookReviewText");
+    const ratingField=document.getElementById("bookReviewRating");
+    const ratingLabel=document.getElementById("reviewRatingLabel");
+    const submit=document.getElementById("bookReviewSubmit");
+    const heading=document.getElementById("reviewFormHeading");
+    form.querySelectorAll("[data-review-rating]").forEach(button=>button.classList.remove("selected"));
+    if(ownReview){
+      if(textField)textField.value=ownReview.comment||"";
+      if(ratingField)ratingField.value=ownReview.rating===null||ownReview.rating===undefined?"":String(ownReview.rating);
+      if(ownReview.rating!==null&&ownReview.rating!==undefined){
+        const selected=form.querySelector('[data-review-rating="'+Number(ownReview.rating)+'"]');
+        if(selected)selected.classList.add("selected");
+        if(ratingLabel)ratingLabel.textContent=Number(ownReview.rating)+" de 5 estrelas selecionadas.";
+      }else if(ratingLabel){ratingLabel.textContent="Ainda não selecionou uma classificação.";}
+      if(heading)heading.textContent="Atualize a sua opinião";
+      if(submit)submit.innerHTML="Guardar alterações <span>→</span>";
+    }else{
+      if(textField)textField.value="";
+      if(ratingField)ratingField.value="";
+      if(ratingLabel)ratingLabel.textContent="Ainda não selecionou uma classificação.";
+      if(heading)heading.textContent="Deixe a sua opinião";
+      if(submit)submit.innerHTML="Publicar opinião <span>→</span>";
+    }
+    const message=document.getElementById("bookReviewMessage");
+    if(message)message.textContent=currentUser?"A sua opinião ficará associada à sua conta.":"Inicie sessão para publicar a sua opinião.";
+  }
+
+  window.addEventListener("84books:load-reviews",event=>{
+    const bookId=event.detail&&event.detail.bookId;
+    if(bookId)loadBookReviews(bookId);
+  });
+
+  document.addEventListener("submit",async event=>{
+    const form=event.target;
+    if(!form||form.id!=="bookReviewForm")return;
+    event.preventDefault();
+    const message=document.getElementById("bookReviewMessage");
+    const submit=document.getElementById("bookReviewSubmit");
+    if(!currentUser){
+      window.dispatchEvent(new Event("84books:login-required"));
+      return;
+    }
+    const bookId=form.dataset.bookId;
+    const comment=(document.getElementById("bookReviewText").value||"").trim();
+    const ratingValue=document.getElementById("bookReviewRating").value;
+    const rating=ratingValue===""?null:Number(ratingValue);
+    if(!comment&&rating===null){
+      if(message)message.textContent="Escreva um comentário ou escolha uma classificação.";
+      return;
+    }
+    if(submit){submit.disabled=true;submit.textContent="A publicar...";}
+    if(message)message.textContent="A guardar a sua opinião...";
+    try{
+      const {error}=await supabaseClient.from("book_reviews").upsert({
+        book_id:bookId,
+        user_id:currentUser.id,
+        comment,
+        rating
+      },{onConflict:"book_id,user_id"});
+      if(error)throw error;
+      if(message)message.textContent="A sua opinião foi guardada. Obrigado por participar!";
+      await loadBookReviews(bookId);
+    }catch(error){
+      if(message)message.textContent=error.message||"Não foi possível guardar a opinião. Tente novamente.";
+      console.warn("84 Books: erro ao publicar opinião.",error.message);
+    }finally{
+      if(submit)submit.disabled=false;
+    }
+  });
 
   async function loadMemberProfile(user){
     profileMessage.textContent = "A carregar o seu perfil...";
