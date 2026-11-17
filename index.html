@@ -25,6 +25,7 @@
       <a href="#contacto">Contacto</a>
     </nav>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar modo claro"><span class="theme-icon" id="themeIcon">☀</span><span class="theme-label" id="themeLabel">Modo claro</span></button>
+    <button class="account-trigger" id="accountOpen" type="button">Entrar / Criar conta</button>
     <a class="header-action" href="#biblioteca">Explorar livros <span>↗</span></a>
   </header>
 
@@ -106,6 +107,26 @@
       <div class="reader-body"><span class="reader-label">PRÉ-VISUALIZAÇÃO</span><h2 id="readerTitle"></h2><p id="readerAuthor" class="reader-author"></p><div class="reader-rule"></div><div id="readerContent" class="reader-content"></div><p class="reader-footnote">Pré-visualização demonstrativa. O conteúdo integral será disponibilizado após a publicação oficial do livro.</p></div>
     </div>
   </div>
+  <div class="auth-overlay" id="authOverlay" aria-hidden="true">
+    <section class="auth-panel" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="auth-close" id="authClose" type="button" aria-label="Fechar">×</button>
+      <div class="auth-brand">84 <span>BOOKS PUBLISHING</span></div>
+      <h2 id="authTitle">A sua biblioteca começa aqui.</h2>
+      <p class="auth-intro">Entre na sua conta ou crie gratuitamente o seu espaço de leitura.</p>
+      <div class="auth-tabs"><button type="button" class="auth-tab active" data-auth-mode="login">Iniciar sessão</button><button type="button" class="auth-tab" data-auth-mode="signup">Criar conta</button></div>
+      <form id="authForm">
+        <label id="fullNameWrap" class="auth-field" hidden>Nome completo<input id="authFullName" type="text" autocomplete="name" placeholder="O seu nome"></label>
+        <label class="auth-field">E-mail<input id="authEmail" type="email" autocomplete="email" placeholder="exemplo@email.com" required></label>
+        <label class="auth-field">Palavra-passe<input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Mínimo de 6 caracteres" required></label>
+        <button class="auth-submit" id="authSubmit" type="submit">Entrar na minha conta</button>
+      </form>
+      <button class="auth-forgot" id="forgotPassword" type="button">Esqueci a minha palavra-passe</button>
+      <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+      <div class="account-session" id="accountSession" hidden><p id="accountWelcome"></p><button type="button" class="auth-submit" id="signOutButton">Terminar sessão</button></div>
+      <p class="auth-privacy">Os seus dados de acesso são protegidos pelo sistema de autenticação do Supabase.</p>
+    </section>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
