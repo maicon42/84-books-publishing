@@ -27,6 +27,41 @@ const empty = document.getElementById("emptyState");
 function bookKey(id){return typeof id==="number"?id:String(id);}
 function parseBookId(value){return /^\d+$/.test(String(value))?Number(value):String(value);}
 function bookPriceLabel(book){if(typeof book.price==="string")return book.price;if(book.type==="gratuito")return "Grátis";if(book.type==="pago")return Number(book.price)>0?Number(book.price).toLocaleString("pt-AO")+" Kz":"Pago";return "Em preparação";}
+function renderHomeGreeting(name){
+  const greeting=document.getElementById("homeGreeting");
+  if(!greeting)return;
+  const user=current84User;
+  if(!user){
+    greeting.textContent="Bem-vindo à 84 Books Publishing.";
+    return;
+  }
+  const metadataName=user.user_metadata&&user.user_metadata.full_name;
+  const displayName=String(name||metadataName||(user.email||"").split("@")[0]||"leitor").trim();
+  greeting.textContent="Seja bem-vindo, "+displayName+"!";
+}
+function renderHomeBookCard(book){
+  const cover=book.coverUrl
+    ?'<img src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'" loading="lazy">'
+    :'<div class="home-cover-fallback"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span>84</span></div>';
+  return '<a class="home-book-card" href="#/livro/'+encodeURIComponent(book.id)+'">'+
+    '<span class="home-book-cover">'+cover+'</span>'+
+    '<span class="home-book-category">'+escapeHTML(book.category||"Geral")+'</span>'+
+    '<strong>'+escapeHTML(book.title)+'</strong>'+
+    '<small>'+escapeHTML(book.author||"84 Books Publishing")+'</small>'+
+    '<span class="home-book-link">Conhecer livro →</span>'+
+  '</a>';
+}
+function renderHome(){
+  const latestContainer=document.getElementById("homeLatestBooks");
+  if(!latestContainer)return;
+  const latest=books.filter(book=>book.isRemote&&book.status==="published")
+    .sort((a,b)=>new Date(b.createdAt||0).getTime()-new Date(a.createdAt||0).getTime())
+    .slice(0,4);
+  latestContainer.innerHTML=latest.length
+    ?latest.map(renderHomeBookCard).join("")
+    :'<p class="home-empty">Ainda não há novos livros publicados. Quando a equipa lançar uma obra, ela aparecerá aqui.</p>';
+}
+
 function renderBooks(){
   const term = search.value.trim().toLocaleLowerCase("pt");
   const visible = books.filter(book => {
@@ -50,6 +85,7 @@ function renderBooks(){
       '</div><div class="book-info"><span class="book-category">'+escapeHTML(book.category||"Geral")+'</span><h3>'+escapeHTML(book.title)+'</h3><p class="book-author">Por '+escapeHTML(book.author)+'</p><div class="book-bottom"><span class="book-price">'+price+'</span><button class="book-open" data-open="'+escapeHTML(book.id)+'">Ver detalhes →</button></div></div></article>';
   }).join("");
   empty.hidden = visible.length !== 0;
+  renderHome();
 }
 document.getElementById("filterList").addEventListener("click", event => {
   const button = event.target.closest("[data-filter]");
@@ -59,6 +95,16 @@ document.getElementById("filterList").addEventListener("click", event => {
   renderBooks();
 });
 search.addEventListener("input", renderBooks);
+const homeCategories=document.getElementById("homeCategories");
+if(homeCategories){
+  homeCategories.addEventListener("click",event=>{
+    const button=event.target.closest("[data-home-category]");
+    if(!button)return;
+    activeFilter="todos";
+    search.value=button.dataset.homeCategory||"";
+    navigate("biblioteca");
+  });
+}
 grid.addEventListener("click", event => {
   const favoriteButton = event.target.closest("[data-favorite]");
   if (favoriteButton) {
@@ -208,6 +254,7 @@ document.addEventListener("click",event=>{
 });
 document.getElementById("year").textContent = new Date().getFullYear();
 renderBooks();
+renderHome();
 renderRoute();
 
 // Alternância de tema — tratamento reforçado para telemóveis.
@@ -351,6 +398,7 @@ renderRoute();
     const user = session && session.user;
     currentUser = user || null;
     current84User = currentUser;
+    renderHomeGreeting();
     form.hidden = !!user;
     forgotButton.hidden = !!user || mode === "signup";
     resendButton.hidden = !!user || mode === "signup";
@@ -376,6 +424,7 @@ renderRoute();
       console.warn("84 Books: catálogo remoto ainda não disponível.",error.message);
       books=[...demoBooks];
       renderBooks();
+      renderHome();
       return;
     }
     const remote=(data||[]).map(row=>{
@@ -391,6 +440,8 @@ renderRoute();
         price:Number(row.price||0),
         priceLabel:row.book_type==="gratuito"?"Grátis":row.book_type==="pago"?(Number(row.price||0).toLocaleString("pt-AO")+" Kz"):"Em preparação",
         status:row.status,
+        createdAt:row.created_at||"",
+        isRemote:true,
         coverUrl:coverResult&&coverResult.data?coverResult.data.publicUrl:"",
         filePath:row.file_path||"",
         tone:"tone-one",
@@ -399,6 +450,7 @@ renderRoute();
     });
     books=[...demoBooks,...remote];
     renderBooks();
+    renderHome();
     if(window.location.hash.startsWith("#/livro/")){
       const id=decodeURIComponent(window.location.hash.split("/")[2]||"");
       renderBookDetail(parseBookId(id));
@@ -420,6 +472,7 @@ renderRoute();
       const metaName = user.user_metadata && user.user_metadata.full_name;
       profileFields.fullName.value = metaName || "";
       memberName.textContent = metaName || "leitor";
+      renderHomeGreeting(metaName);
       return;
     }
     profileMessage.textContent = "";
@@ -443,6 +496,7 @@ renderRoute();
       profileFields.phone.value = phone;
     }
     memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
+    renderHomeGreeting(profile.display_name || profile.full_name || profileFields.fullName.value);
   }
 
   async function openMemberArea(user){
@@ -476,6 +530,7 @@ renderRoute();
       const {error} = await supabaseClient.from("profiles").update(updates).eq("id",currentUser.id);
       if(error) throw error;
       memberName.textContent = updates.display_name || updates.full_name || "leitor";
+      renderHomeGreeting(updates.display_name || updates.full_name);
       profileMessage.textContent = "Perfil guardado com sucesso.";
     }catch(error){
       profileMessage.textContent = error.message || "Não foi possível guardar o perfil.";
