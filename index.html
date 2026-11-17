@@ -50,22 +50,107 @@
   </header>
 
   <main id="appMain">
-  <section class="app-page home-page" id="page-home" data-page="inicio">
-    <div class="home-intro">
-      <div class="eyebrow"><span></span> 84 BOOKS PUBLISHING</div>
-      <h1>O próximo capítulo<br>começa <em>aqui.</em></h1>
-      <p>Entre numa editora digital onde cada livro abre uma nova possibilidade. Explore publicações, conheça a nossa missão e encontre o seu próximo destino de leitura.</p>
-      <div class="hero-actions">
-        <a class="button button-primary" href="#/biblioteca">Entrar na biblioteca <span>→</span></a>
-        <a class="text-link" href="#/boas-vindas">Conhecer a 84 Books <span>↗</span></a>
+    <section class="app-page home-page" id="page-home" data-page="inicio">
+    <div class="home-welcome-panel">
+      <div class="home-welcome-copy">
+        <div class="eyebrow"><span></span> 84 BOOKS PUBLISHING</div>
+        <h1 id="homeGreeting">Bem-vindo à 84 Books Publishing.</h1>
+        <p>Descubra novas histórias, acompanhe os lançamentos e encontre leituras que combinam consigo.</p>
       </div>
+      <a class="button button-primary home-library-button" href="#/biblioteca">Explorar biblioteca <span>→</span></a>
     </div>
-    <div class="home-entry-grid">
-      <a class="entry-card entry-library" href="#/biblioteca"><span class="entry-icon">▤</span><small>EXPLORE</small><h2>Biblioteca</h2><p>Descubra livros, procure por título e entre na página de cada publicação.</p><span class="entry-arrow">Abrir biblioteca →</span></a>
-      <a class="entry-card" href="#/boas-vindas"><span class="entry-icon">✦</span><small>DESCUBRA</small><h2>Boas-vindas</h2><p>Conheça o universo da 84 Books Publishing e a nossa visão para a leitura.</p><span class="entry-arrow">Entrar nesta página →</span></a>
-      <a class="entry-card" href="#/sobre"><span class="entry-icon">84</span><small>A EDITORA</small><h2>Sobre nós</h2><p>Saiba quem somos, o que defendemos e o que queremos construir.</p><span class="entry-arrow">Conhecer a editora →</span></a>
-      <a class="entry-card" href="#/contacto"><span class="entry-icon">✉</span><small>FALE CONNOSCO</small><h2>Contacto</h2><p>Entre em contacto com a equipa da 84 Books Publishing.</p><span class="entry-arrow">Abrir contacto →</span></a>
+
+    <div class="home-feed">
+      <section class="home-shelf">
+        <div class="home-shelf-heading">
+          <div>
+            <div class="eyebrow dark"><span></span> ACABARAM DE CHEGAR</div>
+            <h2>Novos lançamentos</h2>
+            <p>Os livros publicados mais recentemente. Novos capítulos e episódios poderão ser apresentados aqui numa próxima etapa.</p>
+          </div>
+          <a class="text-link dark-link" href="#/biblioteca">Ver biblioteca <span>→</span></a>
+        </div>
+        <div class="home-book-grid" id="homeLatestBooks" aria-live="polite">
+          <p class="home-empty">A carregar os lançamentos...</p>
+        </div>
+      </section>
+
+      <section class="home-shelf">
+        <div class="home-shelf-heading">
+          <div>
+            <div class="eyebrow dark"><span></span> ESCOLHAS EDITORIAIS</div>
+            <h2>Livros em destaque</h2>
+            <p>Publicações escolhidas pela equipa da 84 Books Publishing.</p>
+          </div>
+        </div>
+        <div class="home-placeholder" id="homeFeaturedBooks">Os livros selecionados para destaque aparecerão aqui.</div>
+      </section>
+
+      <div class="home-ranking-grid">
+        <section class="home-shelf home-ranking-shelf">
+          <div class="home-shelf-heading">
+            <div>
+              <div class="eyebrow dark"><span></span> EM EVIDÊNCIA</div>
+              <h2>Mais visualizados</h2>
+              <p>Os livros que despertam mais curiosidade.</p>
+            </div>
+          </div>
+          <div class="home-placeholder" id="homeMostViewed">As visualizações serão apresentadas quando o registo de visitas estiver ativo.</div>
+        </section>
+
+        <section class="home-shelf home-ranking-shelf">
+          <div class="home-shelf-heading">
+            <div>
+              <div class="eyebrow dark"><span></span> PREFERIDOS DOS LEITORES</div>
+              <h2>Mais lidos</h2>
+              <p>As obras com maior número de leituras.</p>
+            </div>
+          </div>
+          <div class="home-placeholder" id="homeMostRead">As leituras serão apresentadas quando o registo de leitura estiver ativo.</div>
+        </section>
+      </div>
+
+      <section class="home-shelf home-categories-section">
+        <div class="home-shelf-heading">
+          <div>
+            <div class="eyebrow dark"><span></span> ENCONTRE O SEU ESTILO</div>
+            <h2>Explore por género</h2>
+            <p>Escolha um género e descubra publicações relacionadas na biblioteca.</p>
+          </div>
+          <a class="text-link dark-link" href="#/biblioteca">Todos os livros <span>→</span></a>
+        </div>
+        <div class="home-category-grid" id="homeCategories">
+          <button type="button" data-home-category="Religioso">Religiosos</button>
+          <button type="button" data-home-category="Bíblico">Bíblicos</button>
+          <button type="button" data-home-category="Cristão">Cristãos</button>
+          <button type="button" data-home-category="Romance">Romance</button>
+          <button type="button" data-home-category="Drama">Drama</button>
+          <button type="button" data-home-category="Ação">Ação</button>
+          <button type="button" data-home-category="Aventura">Aventura</button>
+          <button type="button" data-home-category="Suspense">Suspense</button>
+          <button type="button" data-home-category="Terror">Terror</button>
+          <button type="button" data-home-category="Mistério">Mistério</button>
+          <button type="button" data-home-category="Fantasia">Fantasia</button>
+          <button type="button" data-home-category="Ficção científica">Ficção científica</button>
+          <button type="button" data-home-category="Biografia">Biografia</button>
+          <button type="button" data-home-category="História">História</button>
+          <button type="button" data-home-category="Educação">Educação</button>
+          <button type="button" data-home-category="Poesia">Poesia</button>
+          <button type="button" data-home-category="Autoajuda">Autoajuda</button>
+          <button type="button" data-home-category="Desenvolvimento pessoal">Desenvolvimento pessoal</button>
+          <button type="button" data-home-category="Empreendedorismo">Negócios e empreendedorismo</button>
+          <button type="button" data-home-category="Ciência">Ciência e tecnologia</button>
+          <button type="button" data-home-category="Filosofia">Filosofia</button>
+          <button type="button" data-home-category="Infantil">Infantil e juvenil</button>
+          <button type="button" data-home-category="Mangá">Quadrinhos e mangá</button>
+          <button type="button" data-home-category="Saúde">Saúde e bem-estar</button>
+          <button type="button" data-home-category="Viagem">Viagem e cultura</button>
+          <button type="button" data-home-category="Culinária">Culinária</button>
+          <button type="button" data-home-category="Política">Política e sociedade</button>
+        </div>
+      </section>
     </div>
+
     <div class="home-bottom-note"><span>84</span><p>Conhecimento sem fronteiras. Uma página de cada vez.</p></div>
   </section>
   <section class="app-page welcome-page" id="page-welcome" data-page="boas-vindas" hidden>
