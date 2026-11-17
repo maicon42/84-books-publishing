@@ -229,10 +229,10 @@ function renderBookDetail(id){
         '<div class="review-rating-options" role="group" aria-label="Escolher avaliação">'+
           '<button type="button" class="review-rating-zero" data-review-rating="0" aria-label="Zero estrelas">0</button>'+
           '<button type="button" data-review-rating="1" aria-label="Uma estrela">★</button>'+
-          '<button type="button" data-review-rating="2" aria-label="Duas estrelas">★</button>'+
-          '<button type="button" data-review-rating="3" aria-label="Três estrelas">★</button>'+
-          '<button type="button" data-review-rating="4" aria-label="Quatro estrelas">★</button>'+
-          '<button type="button" data-review-rating="5" aria-label="Cinco estrelas">★</button>'+
+          '<button type="button" data-review-rating="2" aria-label="Duas estrelas">★★</button>'+
+          '<button type="button" data-review-rating="3" aria-label="Três estrelas">★★★</button>'+
+          '<button type="button" data-review-rating="4" aria-label="Quatro estrelas">★★★★</button>'+
+          '<button type="button" data-review-rating="5" aria-label="Cinco estrelas">★★★★★</button>'+
         '</div>'+
         '<input type="hidden" id="bookReviewRating" value="">'+
         '<p class="review-rating-help" id="reviewRatingLabel">Ainda não selecionou uma classificação.</p>'+
@@ -585,11 +585,11 @@ renderRoute();
     const comments=reviews.filter(item=>String(item.comment||"").trim().length>0);
     const ratings=reviews.filter(item=>item.rating!==null&&item.rating!==undefined);
     const average=ratings.length?ratings.reduce((sum,item)=>sum+Number(item.rating),0)/ratings.length:null;
-    averageNode.textContent=average===null?"—":average.toFixed(1).replace(".",",");
+    averageNode.textContent=average===null?"—":average.toFixed(1).replace(".",",")+"/5";
     const rounded=average===null?0:Math.max(0,Math.min(5,Math.round(average)));
     starsNode.textContent="★".repeat(rounded)+"☆".repeat(5-rounded);
     starsNode.setAttribute("aria-label",average===null?"Sem avaliações":"Média de "+average.toFixed(1)+" em 5");
-    statsNode.textContent=comments.length+" "+(comments.length===1?"comentário":"comentários")+" · "+ratings.length+" "+(ratings.length===1?"avaliação":"avaliações");
+    statsNode.textContent=comments.length+" "+(comments.length===1?"pessoa comentou":"pessoas comentaram")+" · "+ratings.length+" "+(ratings.length===1?"avaliação":"avaliações");
     if(!reviews.length){
       list.innerHTML='<p class="feedback-empty">Este livro ainda não recebeu comentários. Seja a primeira pessoa a partilhar uma opinião.</p>';
     }else{
