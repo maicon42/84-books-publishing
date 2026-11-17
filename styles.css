@@ -300,3 +300,56 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
   .main-nav a{gap:3px;padding:8px 5px 9px;font-size:9px}
   .nav-icon{font-size:15px}
 }
+
+
+/* 84 Books — menu de conta e painel de administração */
+.site-menu-action{
+  display:flex;align-items:center;gap:12px;width:100%;padding:12px 10px;
+  border:0;border-radius:5px;background:transparent;color:var(--ink);
+  text-align:left;font:600 12px "DM Sans",sans-serif;cursor:pointer
+}
+.site-menu-action:hover{background:var(--surface-2);color:var(--gold)}
+.site-menu-action>span:first-child{width:22px;text-align:center;color:var(--gold);font-size:17px}
+.site-menu-action .theme-label{color:inherit;font:600 12px "DM Sans",sans-serif}
+.site-menu-action[hidden],.role-badge[hidden],.admin-member-tab[hidden],#adminMenuLink[hidden]{display:none!important}
+.menu-signout{border-top:1px solid var(--line);margin-top:5px;padding-top:14px}
+.member-heading>div:first-child{min-width:0}
+.role-badge{display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:7px 10px;border:1px solid #c9a66c88;background:#c9a66c18;color:var(--gold);font:700 9px "DM Sans",sans-serif;letter-spacing:1.3px}
+.member-menu{grid-auto-rows:min-content}
+.admin-member-tab{border:1px solid #c9a66c66}
+.admin-panel{min-width:0}
+.admin-book-form{padding:20px;margin:22px 0 30px;border:1px solid var(--line);background:var(--paper)}
+.admin-form-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.admin-form-heading strong{font:20px "Playfair Display",serif;color:var(--ink)}
+.admin-form-heading span,.admin-upload-note{font-size:10px;line-height:1.7;color:var(--muted)}
+.admin-book-form input[type="file"]{height:auto;min-height:44px;padding:9px}
+.admin-upload-note{margin:14px 0}
+.admin-form-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.admin-form-actions .profile-message{flex:1 1 180px;margin:0}
+.admin-form-actions .auth-submit{width:auto;min-width:170px;margin:0}
+.admin-form-actions .member-secondary{min-height:43px}
+.admin-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}
+.admin-list-heading h4{font:21px "Playfair Display",serif;color:var(--ink);margin:0}
+.admin-books-list{display:grid;gap:9px}
+.admin-book-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:14px;border:1px solid var(--line);background:var(--paper)}
+.admin-book-summary{min-width:0}
+.admin-book-summary strong{display:block;color:var(--ink);font-size:12px;overflow-wrap:anywhere}
+.admin-book-summary span{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.5}
+.admin-book-status{display:inline-block!important;width:max-content;margin-top:7px!important;padding:4px 7px;background:var(--surface-2);color:var(--gold)!important;font-size:8px!important;font-weight:700;letter-spacing:.7px}
+.admin-book-actions{display:flex;gap:7px;flex:0 0 auto}
+.admin-book-actions button{padding:8px 10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 10px "DM Sans",sans-serif;cursor:pointer}
+.admin-book-actions button:hover{border-color:var(--gold);color:var(--gold)}
+.admin-book-actions .admin-delete{color:#d87970}
+.admin-empty{padding:18px;border:1px dashed var(--line);color:var(--muted);font-size:11px;line-height:1.7}
+.book-cover-image{display:block;width:100%;height:100%;object-fit:cover}
+.detail-cover-wrap .book-cover-image{width:min(100%,270px);height:360px;object-fit:cover}
+@media(max-width:700px){
+  .admin-book-form{padding:15px 12px}
+  .admin-form-heading{align-items:flex-start;flex-direction:column}
+  .admin-book-row{align-items:flex-start;flex-direction:column}
+  .admin-book-actions{width:100%}
+  .admin-book-actions button{flex:1}
+  .admin-form-actions{align-items:stretch;flex-direction:column}
+  .admin-form-actions .auth-submit,.admin-form-actions .member-secondary{width:100%}
+  .admin-list-heading{align-items:flex-start;flex-direction:column}
+}
