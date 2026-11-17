@@ -135,7 +135,7 @@ function renderBookDetail(id){
   const downloadButton=document.getElementById("detailDownload");
   if(downloadButton)downloadButton.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("84books:download-book",{detail:{path:book.filePath}})));
 }
-let current84User=null,authReady=false;
+let current84User=null,authReady=false,current84Role="reader";
 function navigate(path){
   const target="#/"+String(path||"inicio").replace(/^\/+/, "");
   if(window.location.hash===target)renderRoute();else window.location.hash=target;
@@ -143,7 +143,7 @@ function navigate(path){
 function parseRoute(){
   const raw=window.location.hash.startsWith("#/")?window.location.hash.slice(2):"inicio";
   const parts=raw.split("/").filter(Boolean);
-  if(parts[0]==="livro"&&parts[1])return{page:"livro",id:Number(parts[1])};
+  if(parts[0]==="livro"&&parts[1])return{page:"livro",id:parseBookId(decodeURIComponent(parts[1]))};
   if(parts[0]==="membros")return{page:"membros",tab:parts[1]||"profile"};
   if(parts[0]==="favoritos"){activeFilter="favoritos";return{page:"biblioteca",fromFavorites:true};}
   if(parts[0]==="biblioteca")activeFilter="todos";
@@ -157,6 +157,7 @@ function renderRoute(){
     window.dispatchEvent(new Event("84books:login-required"));
     return;
   }
+  if(route.page==="membros"&&route.tab==="admin"&&authReady&&current84Role!=="admin"){window.location.hash="#/membros/profile";return;}
   document.querySelectorAll("[data-page]").forEach(page=>page.hidden=page.dataset.page!==route.page);
   if(route.page==="biblioteca"){
     document.querySelectorAll(".filter-chip").forEach(chip=>chip.classList.toggle("selected",chip.dataset.filter===activeFilter));
@@ -173,7 +174,7 @@ function renderRoute(){
   if(mainNav)mainNav.classList.remove("open");
   if(route.page==="livro")renderBookDetail(route.id);
   if(route.page==="membros"){
-    const allowed=["profile","library","community"],tab=allowed.includes(route.tab)?route.tab:"profile";
+    const allowed=["profile","library","community","admin"],tab=allowed.includes(route.tab)&&(route.tab!=="admin"||current84Role==="admin")?route.tab:"profile";
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
   }
@@ -209,7 +210,7 @@ renderRoute();
 
 // Alternância de tema — tratamento reforçado para telemóveis.
 (function setup84Theme(){
-  const button = document.getElementById("themeToggle");
+  const button = document.getElementById("menuThemeToggle");
   const icon = document.getElementById("themeIcon");
   const label = document.getElementById("themeLabel");
   if (!button || !icon || !label) return;
