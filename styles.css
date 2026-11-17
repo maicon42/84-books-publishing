@@ -108,3 +108,84 @@ body[data-theme="light"] .theme-toggle{border-color:#ddd8ce;color:#806333}
 .member-feature p{font-size:11px;line-height:1.7;color:var(--muted);min-height:55px}
 .member-feature small{font-size:8px;letter-spacing:1.3px;color:var(--gold);font-weight:700}
 @media(max-width:700px){.member-heading{align-items:flex-start;flex-direction:column}.member-heading h2{font-size:32px}.member-layout{grid-template-columns:1fr}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.member-tab{text-align:center;padding:11px 5px;font-size:10px}.member-panel{padding:20px 15px}.member-feature-grid{grid-template-columns:1fr}.member-feature p{min-height:0}.profile-grid{grid-template-columns:1fr}.profile-save-row{align-items:stretch;flex-direction:column}.profile-save{width:100%}.member-actions{width:100%}.member-actions button{flex:1}}
+
+
+/* 84 Books — navegação por páginas internas */
+.app-page[hidden],.member-panel[hidden]{display:none!important}
+.home-page{min-height:calc(100vh - 90px);padding:clamp(42px,7vw,88px) 10% 48px;background:radial-gradient(circle at 85% 12%,#d0ad7018,transparent 30%),var(--paper)}
+.home-intro{max-width:780px;margin:0 auto 48px;text-align:center}
+.home-intro h1{font:clamp(42px,6.5vw,76px)/1.08 "Playfair Display",serif;margin:20px 0;color:var(--ink)}
+.home-intro h1 em{font-style:normal;color:var(--gold)}
+.home-intro>p{max-width:610px;margin:0 auto;color:var(--muted);font-size:14px;line-height:1.9}
+.home-intro .eyebrow{justify-content:center}
+.home-intro .hero-actions{justify-content:center;margin-top:27px}
+.home-entry-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.entry-card{display:flex;flex-direction:column;min-height:230px;padding:23px 20px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;transition:transform .2s,border-color .2s,background .2s}
+.entry-card:hover,.entry-card:focus-visible{transform:translateY(-5px);border-color:var(--gold);background:var(--surface-2);outline:none}
+.entry-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid #c9a66c66;color:var(--gold);font:22px "Playfair Display",serif;margin-bottom:22px}
+.entry-card>small{font-size:8px;letter-spacing:1.8px;color:var(--gold);font-weight:700}
+.entry-card h2{font:22px "Playfair Display",serif;margin:8px 0}
+.entry-card p{font-size:11px;line-height:1.7;color:var(--muted);margin:0 0 20px}
+.entry-arrow{font-size:10px;font-weight:700;color:var(--gold);margin-top:auto}
+.home-bottom-note{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:45px;color:var(--muted)}
+.home-bottom-note span{font:24px "Playfair Display",serif;color:var(--gold)}
+.home-bottom-note p{font-size:10px;letter-spacing:.5px}
+.library-page .library-section{padding-top:70px}
+.book-card{cursor:pointer;transition:transform .18s}
+.book-card:hover{transform:translateY(-4px)}
+.book-card:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.book-open{position:relative;z-index:2}
+.book-detail-page{min-height:75vh;padding-top:42px;padding-bottom:80px}
+.detail-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:38px}
+.detail-topbar>span{font-size:9px;letter-spacing:1.5px;color:var(--muted)}
+.detail-back{border:0;background:transparent;color:var(--gold);font:700 11px "DM Sans",sans-serif;padding:10px 0;cursor:pointer}
+.book-detail-layout{display:grid;grid-template-columns:minmax(230px, .8fr) minmax(0,1.2fr);gap:clamp(30px,7vw,85px);align-items:center;max-width:1000px;margin:0 auto}
+.detail-cover-wrap{min-height:390px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);padding:35px}
+.detail-cover-wrap .cover-art{width:min(100%,270px);height:360px;padding:25px 20px;box-shadow:18px 22px 40px #0005}
+.detail-cover-wrap .cover-art strong{font-size:27px}
+.detail-cover-wrap .cover-number{font-size:64px}
+.book-detail-copy{min-width:0}
+.detail-category{display:inline-block;color:var(--gold);font-size:9px;font-weight:700;letter-spacing:1.7px;text-transform:uppercase;margin-right:12px}
+.detail-status{display:inline-block;padding:6px 9px;background:var(--surface-2);color:var(--muted);font-size:9px}
+.book-detail-copy h1{font:clamp(34px,5vw,52px)/1.12 "Playfair Display",serif;margin:18px 0 8px;color:var(--ink)}
+.detail-author{font-size:12px;color:var(--muted)}
+.detail-description{font:16px/1.9 "Playfair Display",serif;color:var(--ink);margin:27px 0}
+.detail-meta{display:grid;grid-template-columns:100px 1fr;gap:9px 15px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:17px 0}
+.detail-meta span{font-size:8px;letter-spacing:1.4px;color:var(--muted)}
+.detail-meta strong{font-size:10px;color:var(--ink)}
+.detail-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:23px}
+.detail-actions .button{border:0;cursor:pointer}
+.detail-favorite{padding:13px 14px;border:1px solid var(--line);background:transparent;color:var(--gold);font:600 10px "DM Sans",sans-serif;cursor:pointer}
+.detail-coming{padding:13px 14px;background:var(--surface-2);color:var(--muted);font-size:10px}
+.detail-note{font-size:10px;line-height:1.8;color:var(--muted);margin-top:18px}
+.detail-preview{max-width:780px;margin:65px auto 0;padding:32px;border:1px solid var(--line);background:var(--surface)}
+.detail-preview h2{font:30px "Playfair Display",serif;margin:12px 0}
+.detail-preview>p:not(.detail-note){white-space:pre-line;font:16px/2 "Playfair Display",serif;color:var(--ink)}
+body[data-theme="light"] .entry-card{background:#fffdfa}
+body[data-theme="light"] .entry-card:hover{background:#f0ece4}
+body[data-theme="light"] .detail-cover-wrap{background:#ebe7df}
+body[data-theme="light"] .detail-preview{background:#fffdfa}
+@media(max-width:900px){.home-page{padding-left:7%;padding-right:7%}.home-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){
+  .home-page{padding:48px 7% 35px}
+  .home-intro{margin-bottom:32px}
+  .home-intro h1{font-size:46px}
+  .home-intro>p{font-size:12px}
+  .home-intro .hero-actions{align-items:center}
+  .home-entry-grid{grid-template-columns:1fr 1fr;gap:9px}
+  .entry-card{min-height:205px;padding:17px 14px}
+  .entry-icon{width:36px;height:36px;margin-bottom:17px}
+  .entry-card h2{font-size:18px}
+  .entry-card p{font-size:10px}
+  .home-bottom-note{margin-top:30px}
+  .book-detail-page{padding-top:25px;padding-bottom:55px}
+  .detail-topbar{align-items:flex-start;flex-direction:column;margin-bottom:24px}
+  .book-detail-layout{grid-template-columns:1fr;gap:25px}
+  .detail-cover-wrap{min-height:310px;padding:22px}
+  .detail-cover-wrap .cover-art{height:280px;width:210px}
+  .detail-cover-wrap .cover-art strong{font-size:23px}
+  .book-detail-copy h1{font-size:36px}
+  .detail-description{font-size:14px}
+  .detail-preview{margin-top:38px;padding:22px 17px}
+}
+@media(max-width:360px){.home-entry-grid{grid-template-columns:1fr}.entry-card{min-height:170px}}
