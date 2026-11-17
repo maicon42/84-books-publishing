@@ -1,0 +1,58 @@
+/* 84 Books Publishing — correção independente da navegação em telemóveis */
+@media screen and (max-width: 760px) {
+  header.site-header nav#mainNav.main-nav {
+    display: flex !important;
+    position: static !important;
+    grid-area: nav !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    gap: 2px !important;
+    margin: 0 !important;
+    padding: 0 2px 4px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    scrollbar-width: none;
+  }
+
+  header.site-header nav#mainNav.main-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  header.site-header nav#mainNav.main-nav > a {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    gap: 5px !important;
+    padding: 9px 7px 10px !important;
+    white-space: nowrap !important;
+    font-size: 10px !important;
+  }
+
+  header.site-header nav#mainNav.main-nav > a .nav-icon {
+    font-size: 16px !important;
+    line-height: 1 !important;
+  }
+}
+
+@media screen and (max-width: 380px) {
+  header.site-header nav#mainNav.main-nav > a {
+    gap: 3px !important;
+    padding: 8px 5px 9px !important;
+    font-size: 9px !important;
+  }
+
+  header.site-header nav#mainNav.main-nav > a .nav-icon {
+    font-size: 15px !important;
+  }
+}
