@@ -6,7 +6,18 @@ const books = [
   {id:5,title:"Além das Fronteiras",author:"84 Books Publishing",category:"Literatura",type:"pago",price:"Em breve",tone:"tone-five",status:"Disponível",excerpt:"Histórias atravessam fronteiras, aproximam culturas e mostram que a experiência humana tem muitas vozes.\n\nA publicação está a ser preparada. Os detalhes da edição e o acesso integral serão anunciados em breve."},
   {id:6,title:"Aprender Sempre",author:"84 Books Publishing",category:"Educação",type:"gratuito",price:"Grátis",tone:"tone-six",status:"Disponível",excerpt:"Aprender é um processo que acompanha toda a vida. A curiosidade ajuda-nos a fazer perguntas melhores e a encontrar respostas mais completas.\n\nEste pequeno texto é uma demonstração do leitor digital da 84 Books Publishing."}
 ];
-const favorites = new Set(JSON.parse(localStorage.getItem("84books-favorites") || "[]"));
+function readSavedList(key){
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch(error) {
+    return [];
+  }
+}
+function savePreference(key,value){
+  try { localStorage.setItem(key,value); } catch(error) {}
+}
+const favorites = new Set(readSavedList("84books-favorites"));
 let activeFilter = "todos";
 const grid = document.getElementById("bookGrid");
 const search = document.getElementById("searchInput");
@@ -49,7 +60,7 @@ grid.addEventListener("click", event => {
   if (favoriteButton) {
     const id = Number(favoriteButton.dataset.favorite);
     favorites.has(id) ? favorites.delete(id) : favorites.add(id);
-    localStorage.setItem("84books-favorites", JSON.stringify([...favorites]));
+    savePreference("84books-favorites", JSON.stringify([...favorites]));
     renderBooks();
     return;
   }
@@ -93,22 +104,31 @@ mainNav.addEventListener("click", event => {
 document.getElementById("year").textContent = new Date().getFullYear();
 renderBooks();
 
-// Alternância de tema: guarda a preferência neste dispositivo.
-const themeToggle = document.getElementById("themeToggle");
-const themeIcon = document.getElementById("themeIcon");
-const themeLabel = document.getElementById("themeLabel");
-function applyTheme(theme){
-  document.body.dataset.theme = theme;
-  const light = theme === "light";
-  themeIcon.textContent = light ? "☾" : "☀";
-  themeLabel.textContent = light ? "Modo escuro" : "Modo claro";
-  themeToggle.setAttribute("aria-label", light ? "Ativar modo escuro" : "Ativar modo claro");
-  document.querySelector('meta[name="theme-color"]').setAttribute("content", light ? "#fffdfa" : "#090b11");
-}
-const savedTheme = localStorage.getItem("84books-theme");
-applyTheme(savedTheme === "light" ? "light" : "dark");
-themeToggle.addEventListener("click", () => {
-  const next = document.body.dataset.theme === "dark" ? "light" : "dark";
-  localStorage.setItem("84books-theme", next);
-  applyTheme(next);
-});
+// Alternância de tema — tratamento reforçado para telemóveis.
+(function setup84Theme(){
+  const button = document.getElementById("themeToggle");
+  const icon = document.getElementById("themeIcon");
+  const label = document.getElementById("themeLabel");
+  if (!button || !icon || !label) return;
+
+  function readTheme(){
+    try { return localStorage.getItem("84books-theme"); }
+    catch(error) { return null; }
+  }
+  function setTheme(theme){
+    const isLight = theme === "light";
+    document.body.setAttribute("data-theme", isLight ? "light" : "dark");
+    icon.textContent = isLight ? "☾" : "☀";
+    label.textContent = isLight ? "Modo escuro" : "Modo claro";
+    button.setAttribute("aria-label", isLight ? "Ativar modo escuro" : "Ativar modo claro");
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isLight ? "#fffdfa" : "#090b11");
+    try { localStorage.setItem("84books-theme", isLight ? "light" : "dark"); }
+    catch(error) {}
+  }
+
+  setTheme(readTheme() === "light" ? "light" : "dark");
+  button.onclick = function(){
+    setTheme(document.body.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  };
+})();
