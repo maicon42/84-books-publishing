@@ -100,7 +100,7 @@ function renderBookDetail(id){
       <div class="book-detail-copy">
         <span class="detail-category">${escapeHTML(book.category)}</span><span class="detail-status">${escapeHTML(tag)}</span>
         <h1>${escapeHTML(book.title)}</h1><p class="detail-author">Por ${escapeHTML(book.author)}</p>
-        <p class="detail-description">${escapeHTML(book.excerpt.split("\\n\\n")[0])}</p>
+        <p class="detail-description">${escapeHTML(book.excerpt.split("\n\n")[0])}</p>
         <div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>${escapeHTML(book.price)}</strong></div>
         <div class="detail-actions">
           ${book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>'}
@@ -334,12 +334,7 @@ renderRoute();
     memberName.textContent = profile.display_name || profile.full_name || profileFields.fullName.value || "leitor";
   }
 
-  document.querySelectorAll("[data-member-tab]").forEach(tab => {
-    tab.addEventListener("click",()=>{
-      document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item===tab));
-      document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab.dataset.memberTab);
-    });
-  });
+  // A navegação das abas da área de membro é controlada pelo router interno.
 
   profileForm.addEventListener("submit",async event=>{
     event.preventDefault();
