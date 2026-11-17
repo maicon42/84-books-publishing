@@ -489,3 +489,30 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
   .review-submit-row{align-items:stretch;flex-direction:column}
   .review-submit-row .button{justify-content:center}
 }
+
+
+/* Leitor PDF integrado da 84 Books Publishing */
+.pdf-reader{margin:34px 0 48px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.pdf-reader[hidden]{display:none!important}
+.pdf-reader-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:22px 24px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.pdf-reader-heading h2{margin:7px 0 5px;color:var(--ink);font:clamp(21px,3vw,29px)/1.25 "Playfair Display",serif}
+.pdf-reader-heading p{margin:0;max-width:650px;color:var(--muted);font-size:11px;line-height:1.65}
+.pdf-reader-heading p.error{color:#d77b70}
+.pdf-reader-close{flex:0 0 auto;padding:9px 13px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--ink);font-size:11px;cursor:pointer}
+.pdf-reader-toolbar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px 15px;border-bottom:1px solid var(--line);background:var(--surface)}
+.pdf-reader-toolbar button{min-width:38px;min-height:35px;padding:7px 11px;border:1px solid var(--line);border-radius:5px;background:var(--surface-2);color:var(--ink);font-size:11px;cursor:pointer}
+.pdf-reader-toolbar button:disabled{opacity:.4;cursor:not-allowed}
+.pdf-reader-toolbar label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}
+.pdf-reader-toolbar input{width:54px;height:34px;padding:5px;border:1px solid var(--line);border-radius:4px;background:var(--surface-2);color:var(--ink);text-align:center}
+.pdf-reader-toolbar strong{color:var(--ink)}
+.pdf-reader-toolbar-spacer{flex:1 1 12px}
+#pdfZoomValue{min-width:42px;text-align:center;color:var(--muted);font-size:10px}
+.pdf-reader-viewport{display:flex;justify-content:center;align-items:flex-start;min-height:360px;max-height:78vh;overflow:auto;padding:20px 12px;background:#30323a}
+.pdf-reader-viewport canvas{display:block;max-width:none;background:white;box-shadow:0 5px 22px #0005}
+.pdf-reader-footnote{margin:0;padding:12px 18px;border-top:1px solid var(--line);color:var(--muted);font-size:10px;line-height:1.6}
+@media(max-width:620px){
+  .pdf-reader-heading{align-items:flex-start;flex-direction:column;padding:17px 14px}
+  .pdf-reader-toolbar{gap:7px;padding:10px 8px}
+  .pdf-reader-toolbar-spacer{display:none}
+  .pdf-reader-viewport{min-height:300px;max-height:72vh;padding:12px 5px}
+}
