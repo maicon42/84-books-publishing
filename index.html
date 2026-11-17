@@ -95,6 +95,73 @@
     </section>
   </main>
 
+
+  <section class="member-area section-wrap" id="memberArea" hidden>
+    <div class="member-heading">
+      <div>
+        <div class="eyebrow dark"><span></span> ESPAÇO EXCLUSIVO DO MEMBRO</div>
+        <h2>Bem-vindo, <em id="memberName">leitor</em>.</h2>
+        <p>Organize o seu perfil e acompanhe a sua atividade na 84 Books Publishing.</p>
+      </div>
+      <div class="member-actions">
+        <button class="member-secondary" id="memberHome" type="button">Voltar ao início</button>
+        <button class="member-logout" id="memberSignOut" type="button">Terminar sessão</button>
+      </div>
+    </div>
+    <div class="member-layout">
+      <nav class="member-menu" aria-label="Menu da área do membro">
+        <button class="member-tab active" type="button" data-member-tab="profile">Meu perfil</button>
+        <button class="member-tab" type="button" data-member-tab="library">Minha biblioteca</button>
+        <button class="member-tab" type="button" data-member-tab="community">Comunidade</button>
+      </nav>
+      <div class="member-panels">
+        <section class="member-panel" data-member-panel="profile">
+          <div class="member-panel-heading"><span>PERFIL PESSOAL</span><h3>As suas informações</h3><p>Preencha apenas o que quiser. Os dados pessoais do perfil não são publicados automaticamente.</p></div>
+          <form id="profileForm" class="profile-form">
+            <label class="profile-field">Nome completo<input id="profileFullName" type="text" autocomplete="name" required maxlength="120"></label>
+            <label class="profile-field">Nome público / nome artístico<input id="profileDisplayName" type="text" maxlength="60" placeholder="Como quer ser conhecido?"></label>
+            <div class="profile-grid">
+              <label class="profile-field">País
+                <select id="profileCountry">
+                  <option value="">Selecionar país</option>
+                  <option>Angola</option><option>Portugal</option><option>Brasil</option><option>Moçambique</option><option>Cabo Verde</option><option>São Tomé e Príncipe</option><option>Guiné-Bissau</option><option>Namíbia</option><option>África do Sul</option><option>República Democrática do Congo</option><option>Zâmbia</option><option>Nigéria</option><option>Reino Unido</option><option>Estados Unidos</option><option>Outro</option>
+                </select>
+              </label>
+              <label class="profile-field">Telefone
+                <div class="phone-input"><select id="profileDialCode" aria-label="Indicativo do país"><option value="+244">+244 AO</option><option value="+351">+351 PT</option><option value="+55">+55 BR</option><option value="+258">+258 MZ</option><option value="+238">+238 CV</option><option value="+239">+239 ST</option><option value="+245">+245 GW</option><option value="+264">+264 NA</option><option value="+27">+27 ZA</option><option value="+243">+243 CD</option><option value="+260">+260 ZM</option><option value="+234">+234 NG</option><option value="+44">+44 UK</option><option value="+1">+1 US</option></select><input id="profilePhone" type="tel" autocomplete="tel-national" placeholder="Número de telefone"></div>
+              </label>
+              <label class="profile-field">Género
+                <select id="profileGender"><option value="">Prefiro não informar</option><option value="Feminino">Feminino</option><option value="Masculino">Masculino</option><option value="Outro">Outro</option></select>
+              </label>
+              <label class="profile-field">Data de nascimento<input id="profileBirthDate" type="date"></label>
+              <label class="profile-field">Tipo de perfil
+                <select id="profileType"><option value="reader">Leitor</option><option value="author">Autor / Escritora</option><option value="artist">Artista</option><option value="author_artist">Autor e artista</option></select>
+              </label>
+            </div>
+            <label class="profile-field">Biografia curta<textarea id="profileBio" rows="4" maxlength="500" placeholder="Fale um pouco sobre si, os seus livros ou os seus interesses..."></textarea></label>
+            <div class="profile-save-row"><p id="profileMessage" class="profile-message" role="status" aria-live="polite"></p><button class="auth-submit profile-save" id="profileSave" type="submit">Guardar perfil</button></div>
+          </form>
+        </section>
+        <section class="member-panel" data-member-panel="library" hidden>
+          <div class="member-panel-heading"><span>ÁREA DE LEITURA</span><h3>Minha biblioteca</h3><p>O espaço pessoal para acompanhar os livros que lê e os seus favoritos.</p></div>
+          <div class="member-feature-grid">
+            <article class="member-feature"><span>♡</span><h4>Favoritos</h4><p>Vamos ligar os seus livros favoritos à sua conta para os manter sincronizados.</p><small>PRÓXIMA ETAPA</small></article>
+            <article class="member-feature"><span>↓</span><h4>Downloads PDF</h4><p>Os livros gratuitos poderão ser descarregados quando os ficheiros oficiais forem publicados.</p><small>AGUARDA LIVROS</small></article>
+            <article class="member-feature"><span>▤</span><h4>Compras</h4><p>O histórico de compras ficará disponível depois da integração segura de pagamentos.</p><small>EM PREPARAÇÃO</small></article>
+          </div>
+        </section>
+        <section class="member-panel" data-member-panel="community" hidden>
+          <div class="member-panel-heading"><span>84 BOOKS COMMUNITY</span><h3>Comunidade de leitores e autores</h3><p>Um espaço para partilhar ideias, descobrir autores e conversar sobre livros.</p></div>
+          <div class="member-feature-grid">
+            <article class="member-feature"><span>✎</span><h4>Comentários nos livros</h4><p>Os membros poderão avaliar e comentar as publicações.</p><small>EM PREPARAÇÃO</small></article>
+            <article class="member-feature"><span>◉</span><h4>Perfil público de autor</h4><p>Autores e artistas poderão apresentar a sua biografia e as suas obras.</p><small>EM PREPARAÇÃO</small></article>
+            <article class="member-feature"><span>✉</span><h4>Mensagens privadas</h4><p>Conversas entre leitores e autores, com ferramentas de segurança e denúncia.</p><small>EM PREPARAÇÃO</small></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
   <footer class="site-footer">
     <a class="brand footer-brand" href="#"><span class="brand-mark">84</span><span class="brand-copy"><strong>BOOKS</strong><small>PUBLISHING</small></span></a>
     <p>Conhecimento sem fronteiras.</p>
