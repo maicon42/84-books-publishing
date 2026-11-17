@@ -132,3 +132,115 @@ renderBooks();
     setTheme(document.body.getAttribute("data-theme") === "dark" ? "light" : "dark");
   };
 })();
+
+
+// 84 Books Publishing — autenticação real com Supabase
+(function setup84SupabaseAuth(){
+  const PROJECT_URL = "https://ruvtjfryrrbjtctgvwtc.supabase.co";
+  const PUBLISHABLE_KEY = "sb_publishable_44W6KLQQbzEAbIdI2YZASg_uoJzm2-C";
+  const openButton = document.getElementById("accountOpen");
+  const overlay = document.getElementById("authOverlay");
+  if (!openButton || !overlay) return;
+  const closeButton = document.getElementById("authClose");
+  const form = document.getElementById("authForm");
+  const title = document.getElementById("authTitle");
+  const fullNameWrap = document.getElementById("fullNameWrap");
+  const fullNameInput = document.getElementById("authFullName");
+  const emailInput = document.getElementById("authEmail");
+  const passwordInput = document.getElementById("authPassword");
+  const submitButton = document.getElementById("authSubmit");
+  const forgotButton = document.getElementById("forgotPassword");
+  const message = document.getElementById("authMessage");
+  const sessionPanel = document.getElementById("accountSession");
+  const welcome = document.getElementById("accountWelcome");
+  const signOutButton = document.getElementById("signOutButton");
+  let mode = "login";
+  let supabaseClient = null;
+  function showMessage(text, isError){ message.textContent = text || ""; message.classList.toggle("error",!!isError); }
+  function setMode(nextMode){
+    mode = nextMode;
+    document.querySelectorAll("[data-auth-mode]").forEach(tab => tab.classList.toggle("active",tab.dataset.authMode===mode));
+    fullNameWrap.hidden = mode !== "signup";
+    fullNameInput.required = mode === "signup";
+    passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
+    title.textContent = mode === "signup" ? "Crie a sua conta gratuita." : "A sua biblioteca começa aqui.";
+    submitButton.textContent = mode === "signup" ? "Criar a minha conta" : "Entrar na minha conta";
+    forgotButton.hidden = mode === "signup";
+    showMessage("");
+  }
+  function showOverlay(){ overlay.classList.add("open"); overlay.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden"; }
+  function hideOverlay(){ overlay.classList.remove("open"); overlay.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
+  function renderSession(session){
+    const user = session && session.user;
+    form.hidden = !!user;
+    forgotButton.hidden = !!user || mode === "signup";
+    sessionPanel.hidden = !user;
+    openButton.textContent = user ? "A minha conta" : "Entrar / Criar conta";
+    if(user){
+      const name = user.user_metadata && user.user_metadata.full_name;
+      welcome.textContent = "Sessão iniciada como " + (name || user.email || "leitor") + ". A sua conta está ligada à 84 Books Publishing.";
+      showMessage("");
+    }
+  }
+  if (!window.supabase || !window.supabase.createClient) {
+    showMessage("Não foi possível carregar o serviço de contas. Atualize a página e tente novamente.",true);
+    return;
+  }
+  supabaseClient = window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
+  openButton.addEventListener("click",async()=>{
+    showOverlay();
+    const result = await supabaseClient.auth.getSession();
+    renderSession(result.data ? result.data.session : null);
+  });
+  closeButton.addEventListener("click",hideOverlay);
+  overlay.addEventListener("click",event=>{if(event.target===overlay)hideOverlay();});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape" && overlay.classList.contains("open"))hideOverlay();});
+  document.querySelectorAll("[data-auth-mode]").forEach(tab=>tab.addEventListener("click",()=>{setMode(tab.dataset.authMode);renderSession(null);}));
+  form.addEventListener("submit",async event=>{
+    event.preventDefault();
+    const email=emailInput.value.trim();
+    const password=passwordInput.value;
+    submitButton.disabled=true;
+    submitButton.textContent=mode==="signup"?"A criar conta...":"A entrar...";
+    showMessage("A comunicar com segurança com o Supabase...");
+    try{
+      if(mode==="signup"){
+        const fullName=fullNameInput.value.trim();
+        const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:fullName},emailRedirectTo:window.location.href.split("#")[0]}});
+        if(error) throw error;
+        if(data.session){
+          showMessage("Conta criada com sucesso! Já pode começar a utilizar a sua conta.");
+          renderSession(data.session);
+        }else{
+          showMessage("Conta criada! Verifique a sua caixa de e-mail e confirme o endereço antes de iniciar sessão.");
+        }
+      }else{
+        const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+        if(error) throw error;
+        showMessage("Sessão iniciada com sucesso.");
+        renderSession(data.session);
+      }
+    }catch(error){showMessage(error.message || "Ocorreu um erro. Tente novamente.",true);}
+    finally{submitButton.disabled=false;submitButton.textContent=mode==="signup"?"Criar a minha conta":"Entrar na minha conta";}
+  });
+  forgotButton.addEventListener("click",async()=>{
+    const email=emailInput.value.trim();
+    if(!email){showMessage("Introduza primeiro o seu e-mail no campo acima.",true);emailInput.focus();return;}
+    forgotButton.disabled=true;
+    try{
+      const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:window.location.href.split("#")[0]});
+      if(error)throw error;
+      showMessage("Se o endereço estiver registado, receberá um e-mail com as instruções para redefinir a palavra-passe.");
+    }catch(error){showMessage(error.message || "Não foi possível enviar o pedido.",true);}
+    finally{forgotButton.disabled=false;}
+  });
+  signOutButton.addEventListener("click",async()=>{
+    signOutButton.disabled=true;
+    const {error}=await supabaseClient.auth.signOut();
+    signOutButton.disabled=false;
+    if(error){showMessage(error.message,true);return;}
+    renderSession(null);setMode("login");showMessage("Terminou a sessão com sucesso.");
+  });
+  supabaseClient.auth.onAuthStateChange((_event,session)=>renderSession(session));
+  supabaseClient.auth.getSession().then(({data})=>renderSession(data.session));
+})();
