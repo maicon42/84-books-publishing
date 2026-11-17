@@ -178,6 +178,7 @@ function renderRoute(){
     const allowed=["profile","library","community","admin"],tab=allowed.includes(route.tab)&&(route.tab!=="admin"||current84Role==="admin")?route.tab:"profile";
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
+    if(tab==="admin")window.dispatchEvent(new Event("84books:admin-open"));
   }
   const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",comunidade:"Comunidade",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
   const book=route.page==="livro"?books.find(item=>item.id===route.id):null;
@@ -632,7 +633,7 @@ renderRoute();
 
   adminCancel.addEventListener("click",resetAdminForm);
   document.getElementById("adminRefreshBooks").addEventListener("click",renderAdminBooks);
-  adminMemberTab.addEventListener("click",renderAdminBooks);
+  window.addEventListener("84books:admin-open",renderAdminBooks);
 
   window.addEventListener("84books:download-book",async event=>{
     const path=event.detail&&event.detail.path;
