@@ -695,3 +695,5 @@ body[data-theme="light"]{--paper:#fff;--surface:#fff;--surface-2:#fafafa;--heade
 .member-panel-heading p{line-height:1.65;color:#505662}
 .admin-book-summary span,.admin-book-summary small{font-size:13px;line-height:1.5}
 @media(max-width:800px){.community-layout{grid-template-columns:1fr}.profile-avatar-editor{grid-template-columns:70px minmax(0,1fr)}.profile-avatar-preview{width:64px;height:64px}}
+
+small{font-size:13px}.brand-copy small{font-size:11px}.eyebrow{font-size:12px}
