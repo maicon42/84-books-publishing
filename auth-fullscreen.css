@@ -58,3 +58,13 @@
 
 /* A confirmação só aparece durante o registo; nunca no início de sessão. */
 #authConfirmLabel[hidden]{display:none!important}
+
+/* Ecrã de redefinição da palavra-passe */
+.password-recovery-panel{width:100%;max-width:720px;margin:24px auto 0}
+.password-recovery-panel h2{margin-bottom:10px}
+.password-recovery-panel>p{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:22px}
+#passwordRecoveryForm{display:grid;gap:14px}
+#passwordRecoveryForm .auth-field{display:block}
+#passwordRecoveryForm .auth-field input{display:block;width:100%;margin-top:7px}
+#passwordRecoveryForm .auth-submit{width:100%;min-height:52px}
+#passwordRecoveryPanel[hidden]{display:none!important}
