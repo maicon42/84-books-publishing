@@ -459,6 +459,92 @@ grant all on public.book_sales to service_role;
 grant all on public.author_royalty_statements to service_role;
 grant all on public.author_payouts to service_role;
 
+-- 12. Versões oficiais do contrato. O servidor fixa o snapshot aceite.
+create table if not exists public.author_contract_versions (
+  version text primary key,
+  document_url text not null,
+  terms_snapshot jsonb not null,
+  is_active boolean not null default false,
+  created_at timestamptz not null default now(),
+  created_by uuid references auth.users(id) on delete set null
+);
+
+alter table public.author_contract_versions enable row level security;
+grant select on public.author_contract_versions to anon, authenticated;
+revoke insert, update, delete on public.author_contract_versions from anon, authenticated;
+grant all on public.author_contract_versions to service_role;
+
+drop policy if exists "Versões ativas do contrato são consultáveis" on public.author_contract_versions;
+create policy "Versões ativas do contrato são consultáveis"
+on public.author_contract_versions for select to anon, authenticated
+using (is_active or private.is_84books_admin());
+
+drop policy if exists "Administradores gerem versões do contrato" on public.author_contract_versions;
+create policy "Administradores gerem versões do contrato"
+on public.author_contract_versions for all to authenticated
+using (private.is_84books_admin())
+with check (private.is_84books_admin());
+
+insert into public.author_contract_versions (version, document_url, terms_snapshot, is_active)
+values (
+  '1.0',
+  'https://github.com/maicon42/84-books-publishing/blob/main/CONTRATO-PUBLICACAO-AUTORES.md',
+  '{"version":"1.0","license":"non_exclusive","paid_sales":{"author_percent":90,"platform_percent":10,"basis":"net_revenue"},"rewarded_ads":{"author_percent":70,"platform_percent":30,"basis":"net_verified_ad_revenue"},"free_reading_ads":"only_on_explicit_read_or_download_action","no_intrusive_ads":true}'::jsonb,
+  true
+)
+on conflict (version) do update
+set document_url = excluded.document_url,
+    terms_snapshot = excluded.terms_snapshot,
+    is_active = excluded.is_active;
+
+do $
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'author_contract_acceptances_version_fkey'
+      and conrelid = 'public.author_contract_acceptances'::regclass
+  ) then
+    alter table public.author_contract_acceptances
+      add constraint author_contract_acceptances_version_fkey
+      foreign key (contract_version)
+      references public.author_contract_versions(version)
+      on delete restrict;
+  end if;
+end;
+$;
+
+create or replace function public.stamp_84books_contract_acceptance()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+declare
+  canonical_terms jsonb;
+begin
+  select v.terms_snapshot
+    into canonical_terms
+  from public.author_contract_versions v
+  where v.version = new.contract_version
+    and v.is_active = true;
+
+  if canonical_terms is null then
+    raise exception 'Esta versão do contrato não está ativa para novas aceitações.';
+  end if;
+
+  new.accepted_terms := canonical_terms;
+  if not private.is_84books_admin() then
+    new.accepted_at := now();
+    new.created_at := now();
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.stamp_84books_contract_acceptance() from public, anon, authenticated;
+drop trigger if exists stamp_84books_contract_acceptance on public.author_contract_acceptances;
+create trigger stamp_84books_contract_acceptance
+before insert on public.author_contract_acceptances
+for each row execute function public.stamp_84books_contract_acceptance();
+
 commit;
 
 -- Verificação rápida após execução:
