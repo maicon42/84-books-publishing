@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261119-rights-1">
+  <link rel="stylesheet" href="styles.css?v=20261120-author-portal-1">
   <link rel="stylesheet" href="mobile-nav.css?v=20261117-1">
 </head>
 <body>
@@ -347,14 +347,14 @@
             <label class="profile-field">Capa (opcional)<input id="authorCover" type="file" accept="image/jpeg,image/png,image/webp"></label>
             <p class="admin-upload-note">JPG, PNG ou WEBP · máximo 8 MB. Envie apenas uma capa criada por si ou cuja utilização tenha autorização.</p>
             <div class="author-contract-box">
-              <strong>Contrato de publicação digital</strong>
+              <strong>Minuta de contrato de publicação digital</strong>
               <p id="authorContractVersion">A verificar a versão ativa do contrato...</p>
               <a id="authorContractLink" href="https://github.com/maicon42/84-books-publishing/blob/main/CONTRATO-PUBLICACAO-AUTORES.md" target="_blank" rel="noopener">Ler a minuta do contrato</a>
-              <p class="author-contract-note">A minuta publicada é um modelo sujeito a revisão jurídica. A versão e os termos oficiais apresentados pelo sistema serão guardados no registo da sua aceitação.</p>
+              <p class="author-contract-note">Esta é uma minuta provisória, não o contrato final de publicação. O registo desta etapa confirma apenas a sua autorização para análise editorial. Antes de publicar ou vender a obra, será apresentado o contrato definitivo, com os campos preenchidos e revisão jurídica.</p>
             </div>
             <label class="profile-field">Nome legal completo para o contrato *<input id="authorLegalName" type="text" required maxlength="180" autocomplete="name" placeholder="O seu nome conforme documento legal"></label>
             <label class="author-check"><input id="authorRightsDeclaration" type="checkbox" required><span>Declaro que sou titular dos direitos da obra ou que tenho autorização escrita dos titulares, coautores, tradutores, ilustradores e demais colaboradores necessários.</span></label>
-            <label class="author-check"><input id="authorContractAccept" type="checkbox" required><span>Li e aceito o contrato de publicação digital e as condições de remuneração aplicáveis à minha obra.</span></label>
+            <label class="author-check"><input id="authorContractAccept" type="checkbox" required><span>Reconheço que a versão atual é uma minuta provisória e autorizo a análise editorial da minha obra. Sei que a publicação só ocorrerá depois da revisão jurídica e da aceitação de um contrato definitivo com as condições específicas.</span></label>
             <div class="admin-form-actions"><p id="authorSubmissionMessage" class="profile-message" role="status" aria-live="polite"></p><button class="auth-submit profile-save" id="authorSubmissionSave" type="submit">Enviar para análise</button></div>
           </form>
           <div class="admin-list-heading"><h4>As minhas submissões</h4><button class="member-secondary" id="authorRefreshSubmissions" type="button">Atualizar</button></div>
@@ -455,6 +455,6 @@
     </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261119-rights-1"></script>
+  <script src="app.js?v=20261120-author-portal-1"></script>
 </body>
 </html>
