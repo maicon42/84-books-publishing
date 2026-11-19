@@ -405,7 +405,7 @@ renderRoute();
   if (!button || !icon || !label) return;
 
   function readTheme(){
-    try { return localStorage.getItem("84books-theme"); }
+    try { return localStorage.getItem("84books-theme-v2"); }
     catch(error) { return null; }
   }
   function setTheme(theme){
@@ -416,11 +416,11 @@ renderRoute();
     button.setAttribute("aria-label", isLight ? "Ativar modo escuro" : "Ativar modo claro");
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", isLight ? "#fffdfa" : "#090b11");
-    try { localStorage.setItem("84books-theme", isLight ? "light" : "dark"); }
+    try { localStorage.setItem("84books-theme-v2", isLight ? "light" : "dark"); }
     catch(error) {}
   }
 
-  setTheme(readTheme() === "light" ? "light" : "dark");
+  setTheme(readTheme() === "dark" ? "dark" : "light");
   button.onclick = function(){
     setTheme(document.body.getAttribute("data-theme") === "dark" ? "light" : "dark");
   };
@@ -800,6 +800,8 @@ renderRoute();
     const url=supabaseClient.storage.from("84books-brand").getPublicUrl(data.logo_path).data.publicUrl;
     document.querySelectorAll(".brand-mark").forEach(node=>{node.innerHTML='<img src="'+url+'" alt="Logotipo 84 Books Publishing">';node.classList.add("has-logo");});
   }
+
+  loadBranding();
 
   async function loadAdminUsers(){
     const node=document.getElementById("adminUsersList");
