@@ -6,6 +6,7 @@
   const form=$("authForm"),signup=$("signupFields"),identifierInput=$("authEmail"),password=$("authPassword");
   const overlay=$("authOverlay");
   if(!form||!window.supabase)return;
+  form.noValidate=true;
   const client=window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   const fallbackCountries=[
     ["Afeganistão","+93"],["África do Sul","+27"],["Albânia","+355"],["Alemanha","+49"],["Andorra","+376"],["Angola","+244"],["Arábia Saudita","+966"],["Argélia","+213"],["Argentina","+54"],["Austrália","+61"],["Áustria","+43"],["Bélgica","+32"],["Brasil","+55"],["Cabo Verde","+238"],["Canadá","+1"],["China","+86"],["Colômbia","+57"],["Coreia do Sul","+82"],["Cuba","+53"],["Dinamarca","+45"],["Egito","+20"],["Espanha","+34"],["Estados Unidos","+1"],["Etiópia","+251"],["Filipinas","+63"],["Finlândia","+358"],["França","+33"],["Gana","+233"],["Guiné-Bissau","+245"],["Índia","+91"],["Indonésia","+62"],["Irlanda","+353"],["Israel","+972"],["Itália","+39"],["Japão","+81"],["Quénia","+254"],["Marrocos","+212"],["Moçambique","+258"],["Namíbia","+264"],["Nigéria","+234"],["Noruega","+47"],["Países Baixos","+31"],["Paquistão","+92"],["Peru","+51"],["Polónia","+48"],["Portugal","+351"],["Reino Unido","+44"],["República Democrática do Congo","+243"],["Rússia","+7"],["São Tomé e Príncipe","+239"],["Senegal","+221"],["Suécia","+46"],["Suíça","+41"],["Tanzânia","+255"],["Timor-Leste","+670"],["Turquia","+90"],["Ucrânia","+380"],["Zâmbia","+260"],["Zimbabwe","+263"]
