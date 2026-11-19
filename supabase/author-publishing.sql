@@ -431,6 +431,34 @@ create trigger stamp_84books_contract_acceptance
 before insert on public.author_contract_acceptances
 for each row execute function public.stamp_84books_contract_acceptance();
 
+-- 11. Privilégios explícitos: o navegador nunca escreve dados financeiros ou eventos de recompensa.
+revoke all on public.author_submissions from anon;
+revoke delete on public.author_submissions from authenticated;
+grant select, insert, update on public.author_submissions to authenticated;
+
+revoke all on public.author_contract_acceptances from anon;
+revoke update, delete on public.author_contract_acceptances from authenticated;
+grant select, insert on public.author_contract_acceptances to authenticated;
+
+revoke all on public.rewarded_access_events from anon, authenticated;
+grant select on public.rewarded_access_events to authenticated;
+
+revoke all on public.book_sales from anon, authenticated;
+grant select on public.book_sales to authenticated;
+
+revoke all on public.author_royalty_statements from anon, authenticated;
+grant select on public.author_royalty_statements to authenticated;
+
+revoke all on public.author_payouts from anon, authenticated;
+grant select on public.author_payouts to authenticated;
+
+grant all on public.author_submissions to service_role;
+grant all on public.author_contract_acceptances to service_role;
+grant all on public.rewarded_access_events to service_role;
+grant all on public.book_sales to service_role;
+grant all on public.author_royalty_statements to service_role;
+grant all on public.author_payouts to service_role;
+
 commit;
 
 -- Verificação rápida após execução:
