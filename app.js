@@ -343,10 +343,11 @@ function renderRoute(){
   if(mainNav)mainNav.classList.remove("open");
   if(route.page==="livro")renderBookDetail(route.id);
   if(route.page==="membros"){
-    const allowed=["profile","library","community","admin"],tab=allowed.includes(route.tab)&&(route.tab!=="admin"||current84Role==="admin")?route.tab:"profile";
+    const allowed=["profile","library","community","author","admin"],tab=allowed.includes(route.tab)&&(route.tab!=="admin"||current84Role==="admin")?route.tab:"profile";
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
     if(tab==="admin")window.dispatchEvent(new Event("84books:admin-open"));
+    if(tab==="author")window.dispatchEvent(new Event("84books:author-open"));
   }
   const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",comunidade:"Comunidade",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
   const book=route.page==="livro"?books.find(item=>item.id===route.id):null;
@@ -448,6 +449,25 @@ renderRoute();
   const adminSave = document.getElementById("adminBookSave");
   const adminFormTitle = document.getElementById("adminFormTitle");
   const adminCancel = document.getElementById("adminBookCancel");
+  const authorSubmissionForm = document.getElementById("authorSubmissionForm");
+  const authorSubmissionMessage = document.getElementById("authorSubmissionMessage");
+  const authorSubmissionSave = document.getElementById("authorSubmissionSave");
+  const authorSubmissionsList = document.getElementById("authorSubmissionsList");
+  const adminAuthorSubmissionsList = document.getElementById("adminAuthorSubmissionsList");
+  const authorContractVersionNode = document.getElementById("authorContractVersion");
+  const authorContractLink = document.getElementById("authorContractLink");
+  const authorSubmissionFields = {
+    title:document.getElementById("authorBookTitle"),
+    displayName:document.getElementById("authorDisplayName"),
+    category:document.getElementById("authorCategory"),
+    coauthors:document.getElementById("authorCoauthors"),
+    synopsis:document.getElementById("authorSynopsis"),
+    manuscript:document.getElementById("authorManuscript"),
+    cover:document.getElementById("authorCover"),
+    legalName:document.getElementById("authorLegalName"),
+    rights:document.getElementById("authorRightsDeclaration"),
+    accept:document.getElementById("authorContractAccept")
+  };
   const adminFields = {
     id:document.getElementById("adminBookId"),
     coverPath:document.getElementById("adminBookCoverPath"),
@@ -501,6 +521,8 @@ renderRoute();
   let mode = "login";
   let supabaseClient = null;
   let adminBookCache = [];
+  let activeAuthorContractVersion = null;
+  let authorSubmissionCache = [];
   let pdfJsPromise = null;
   let activePdfDocument = null;
   let activePdfRenderTask = null;
@@ -1008,6 +1030,228 @@ renderRoute();
     }
   });
 
+  function setAuthorSubmissionMessage(text,isError){
+    if(!authorSubmissionMessage)return;
+    authorSubmissionMessage.textContent=text||"";
+    authorSubmissionMessage.classList.toggle("error",!!isError);
+  }
+
+  function authorSubmissionStatusLabel(status){
+    const labels={
+      draft:"Rascunho",
+      submitted:"Enviada para análise",
+      under_review:"Em análise",
+      changes_requested:"Correções solicitadas",
+      approved:"Aprovada",
+      rejected:"Recusada",
+      withdrawn:"Retirada"
+    };
+    return labels[status]||"Estado desconhecido";
+  }
+
+  async function loadActiveAuthorContract(){
+    if(!authorContractVersionNode||!supabaseClient)return;
+    authorContractVersionNode.textContent="A verificar a versão ativa do contrato...";
+    const {data,error}=await supabaseClient.from("author_contract_versions")
+      .select("version,document_url")
+      .eq("is_active",true)
+      .order("created_at",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+    if(error||!data){
+      activeAuthorContractVersion=null;
+      authorContractVersionNode.textContent="Não foi possível confirmar uma versão ativa do contrato. Tente novamente mais tarde.";
+      if(authorSubmissionSave)authorSubmissionSave.disabled=true;
+      return;
+    }
+    activeAuthorContractVersion=data.version;
+    authorContractVersionNode.textContent="Versão ativa do contrato: "+data.version;
+    if(authorContractLink&&data.document_url)authorContractLink.href=data.document_url;
+    if(authorSubmissionSave)authorSubmissionSave.disabled=false;
+  }
+
+  async function loadAuthorSubmissions(){
+    if(!currentUser||!authorSubmissionsList||!supabaseClient)return;
+    authorSubmissionsList.innerHTML='<p class="admin-empty">A carregar as suas submissões...</p>';
+    const {data,error}=await supabaseClient.from("author_submissions")
+      .select("id,title,author_display_name,category,status,admin_notes,created_at,updated_at")
+      .eq("author_id",currentUser.id)
+      .order("created_at",{ascending:false});
+    if(error){
+      authorSubmissionsList.innerHTML='<p class="admin-empty">Não foi possível carregar as submissões. Atualize a página e tente novamente.</p>';
+      return;
+    }
+    const rows=data||[];
+    if(!rows.length){
+      authorSubmissionsList.innerHTML='<p class="admin-empty">Ainda não enviou nenhum livro. Preencha o formulário acima para começar.</p>';
+      return;
+    }
+    authorSubmissionsList.innerHTML=rows.map(item=>
+      '<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(item.title)+'</strong><span>'+escapeHTML(item.author_display_name||"Autor não indicado")+' · '+escapeHTML(item.category||"Geral")+'</span><span class="admin-book-status">'+escapeHTML(authorSubmissionStatusLabel(item.status))+'</span>'+(item.admin_notes?'<span class="author-admin-note"><b>Nota da equipa:</b> '+escapeHTML(item.admin_notes)+'</span>':'')+'<span>Enviada/criada: '+escapeHTML(new Date(item.created_at).toLocaleDateString("pt-PT"))+'</span></div></article>'
+    ).join("");
+  }
+
+  async function uploadAuthorFile(bucket,file,contentType){
+    const cleanName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const path=currentUser.id+"/"+Date.now()+"-"+Math.random().toString(36).slice(2)+"-"+cleanName;
+    const {error}=await supabaseClient.storage.from(bucket).upload(path,file,{contentType:contentType||file.type,upsert:false});
+    if(error)throw error;
+    return path;
+  }
+
+  async function submitAuthorManuscript(event){
+    event.preventDefault();
+    if(!currentUser){setAuthorSubmissionMessage("Inicie sessão para enviar uma obra.",true);return;}
+    if(!activeAuthorContractVersion){setAuthorSubmissionMessage("A versão ativa do contrato ainda não foi carregada. Atualize e tente novamente.",true);return;}
+    const manuscript=authorSubmissionFields.manuscript.files[0];
+    const cover=authorSubmissionFields.cover.files[0]||null;
+    if(!manuscript){setAuthorSubmissionMessage("Selecione o manuscrito completo.",true);return;}
+    const extension=(manuscript.name.split(".").pop()||"").toLowerCase();
+    const manuscriptTypes={
+      pdf:"application/pdf",
+      doc:"application/msword",
+      docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      odt:"application/vnd.oasis.opendocument.text"
+    };
+    if(!manuscriptTypes[extension]||manuscript.size>50*1024*1024){
+      setAuthorSubmissionMessage("O manuscrito deve ser PDF, DOC, DOCX ou ODT e não pode ultrapassar 50 MB.",true);return;
+    }
+    if(cover&&(!/^image\/(jpeg|png|webp)$/.test(cover.type)||cover.size>8*1024*1024)){
+      setAuthorSubmissionMessage("A capa deve ser JPG, PNG ou WEBP e ter no máximo 8 MB.",true);return;
+    }
+    authorSubmissionSave.disabled=true;
+    authorSubmissionSave.textContent="A enviar...";
+    setAuthorSubmissionMessage("A carregar os ficheiros em armazenamento privado...");
+    let manuscriptPath=null,coverPath=null;
+    try{
+      manuscriptPath=await uploadAuthorFile("84books-manuscripts",manuscript,manuscriptTypes[extension]);
+      if(cover)coverPath=await uploadAuthorFile("84books-author-covers",cover,cover.type);
+      const submissionPayload={
+        author_id:currentUser.id,
+        title:authorSubmissionFields.title.value.trim(),
+        author_display_name:authorSubmissionFields.displayName.value.trim(),
+        category:authorSubmissionFields.category.value.trim(),
+        synopsis:authorSubmissionFields.synopsis.value.trim(),
+        coauthors:authorSubmissionFields.coauthors.value.trim(),
+        manuscript_path:manuscriptPath,
+        cover_path:coverPath,
+        rights_declaration:authorSubmissionFields.rights.checked,
+        status:"draft"
+      };
+      const {data:submission,error:submissionError}=await supabaseClient.from("author_submissions")
+        .insert(submissionPayload)
+        .select("id")
+        .single();
+      if(submissionError)throw submissionError;
+      const {error:acceptError}=await supabaseClient.from("author_contract_acceptances").insert({
+        submission_id:submission.id,
+        author_id:currentUser.id,
+        contract_version:activeAuthorContractVersion,
+        legal_name:authorSubmissionFields.legalName.value.trim(),
+        accepted_terms:{}
+      });
+      if(acceptError)throw acceptError;
+      const {error:updateError}=await supabaseClient.from("author_submissions")
+        .update({status:"submitted"})
+        .eq("id",submission.id)
+        .eq("author_id",currentUser.id);
+      if(updateError)throw updateError;
+      setAuthorSubmissionMessage("Livro enviado com sucesso! A equipa editorial irá analisar a obra e atualizar o estado nesta área.");
+      authorSubmissionForm.reset();
+      const profileName=profileFields.displayName.value||profileFields.fullName.value||(currentUser.user_metadata&&currentUser.user_metadata.full_name)||"";
+      authorSubmissionFields.displayName.value=profileName;
+      await loadAuthorSubmissions();
+    }catch(error){
+      setAuthorSubmissionMessage(error.message||"Não foi possível enviar a obra. Verifique os ficheiros e tente novamente.",true);
+      if(manuscriptPath)console.warn("84 Books: ficheiro de manuscrito enviado; a submissão não foi concluída.",manuscriptPath);
+      if(coverPath)console.warn("84 Books: capa enviada; a submissão não foi concluída.",coverPath);
+      await loadAuthorSubmissions();
+    }finally{
+      authorSubmissionSave.disabled=false;
+      authorSubmissionSave.textContent="Enviar para análise";
+    }
+  }
+
+  async function renderAdminAuthorSubmissions(){
+    if(current84Role!=="admin"||!currentUser||!adminAuthorSubmissionsList)return;
+    adminAuthorSubmissionsList.innerHTML='<p class="admin-empty">A carregar submissões de autores...</p>';
+    const {data,error}=await supabaseClient.from("author_submissions")
+      .select("id,author_id,title,author_display_name,category,synopsis,coauthors,manuscript_path,cover_path,status,admin_notes,created_at")
+      .order("created_at",{ascending:false});
+    if(error){
+      adminAuthorSubmissionsList.innerHTML='<p class="admin-empty">Não foi possível carregar a fila editorial.</p>';
+      return;
+    }
+    const rows=data||[];
+    if(!rows.length){
+      adminAuthorSubmissionsList.innerHTML='<p class="admin-empty">Ainda não existem submissões de autores.</p>';
+      return;
+    }
+    const cards=await Promise.all(rows.map(async item=>{
+      let manuscriptUrl="",coverUrl="";
+      if(item.manuscript_path){
+        const signed=await supabaseClient.storage.from("84books-manuscripts").createSignedUrl(item.manuscript_path,180);
+        if(!signed.error&&signed.data)manuscriptUrl=signed.data.signedUrl;
+      }
+      if(item.cover_path){
+        const signed=await supabaseClient.storage.from("84books-author-covers").createSignedUrl(item.cover_path,180);
+        if(!signed.error&&signed.data)coverUrl=signed.data.signedUrl;
+      }
+      return '<article class="author-review-card" data-submission-card="'+escapeHTML(item.id)+'">'+
+        '<div class="admin-book-summary"><strong>'+escapeHTML(item.title)+'</strong><span>'+escapeHTML(item.author_display_name||"Autor sem nome público")+' · '+escapeHTML(item.category||"Geral")+'</span><span class="admin-book-status">'+escapeHTML(authorSubmissionStatusLabel(item.status))+'</span><p>'+escapeHTML(item.synopsis||"Sem sinopse.")+'</p><small>Conta do autor: '+escapeHTML(item.author_id)+'</small>'+(item.coauthors?'<p><b>Coautores:</b> '+escapeHTML(item.coauthors)+'</p>':'')+
+        '<div class="author-review-files">'+(manuscriptUrl?'<a href="'+escapeHTML(manuscriptUrl)+'" target="_blank" rel="noopener">Abrir manuscrito (link temporário)</a>':'<span>Manuscrito indisponível</span>')+(coverUrl?'<a href="'+escapeHTML(coverUrl)+'" target="_blank" rel="noopener">Abrir capa</a>':'')+'</div>'+
+        '<label class="profile-field">Nota interna / resposta ao autor<textarea data-submission-notes rows="3" maxlength="2000">'+escapeHTML(item.admin_notes||"")+'</textarea></label>'+
+        '<div class="author-review-actions">'+
+        '<button type="button" data-submission-action="under_review" data-submission-id="'+escapeHTML(item.id)+'">Em análise</button>'+
+        '<button type="button" data-submission-action="changes_requested" data-submission-id="'+escapeHTML(item.id)+'">Pedir correções</button>'+
+        '<button type="button" data-submission-action="approved" data-submission-id="'+escapeHTML(item.id)+'">Aprovar</button>'+
+        '<button type="button" class="admin-delete" data-submission-action="rejected" data-submission-id="'+escapeHTML(item.id)+'">Recusar</button>'+
+        '</div></div></article>';
+    }));
+    adminAuthorSubmissionsList.innerHTML=cards.join("");
+  }
+
+  async function updateAuthorSubmissionStatus(id,status,button){
+    if(current84Role!=="admin"||!currentUser)return;
+    const card=button.closest("[data-submission-card]");
+    const notes=card&&card.querySelector("[data-submission-notes]");
+    button.disabled=true;
+    try{
+      const {error}=await supabaseClient.from("author_submissions").update({
+        status,
+        admin_notes:notes?notes.value.trim():"",
+        reviewed_by:currentUser.id,
+        reviewed_at:new Date().toISOString()
+      }).eq("id",id);
+      if(error)throw error;
+      await renderAdminAuthorSubmissions();
+    }catch(error){
+      window.alert(error.message||"Não foi possível atualizar a submissão.");
+      button.disabled=false;
+    }
+  }
+
+  if(authorSubmissionForm){
+    authorSubmissionForm.addEventListener("submit",submitAuthorManuscript);
+  }
+  if(document.getElementById("authorRefreshSubmissions")){
+    document.getElementById("authorRefreshSubmissions").addEventListener("click",loadAuthorSubmissions);
+  }
+  if(document.getElementById("adminRefreshSubmissions")){
+    document.getElementById("adminRefreshSubmissions").addEventListener("click",renderAdminAuthorSubmissions);
+  }
+  if(adminAuthorSubmissionsList){
+    adminAuthorSubmissionsList.addEventListener("click",event=>{
+      const button=event.target.closest("[data-submission-action]");
+      if(!button)return;
+      updateAuthorSubmissionStatus(button.dataset.submissionId,button.dataset.submissionAction,button);
+    });
+  }
+  window.addEventListener("84books:author-open",async()=>{
+    await loadActiveAuthorContract();
+    await loadAuthorSubmissions();
+  });
+
   function resetAdminForm(){
     adminForm.reset();
     adminFields.id.value="";
@@ -1200,7 +1444,10 @@ renderRoute();
 
   adminCancel.addEventListener("click",resetAdminForm);
   document.getElementById("adminRefreshBooks").addEventListener("click",renderAdminBooks);
-  window.addEventListener("84books:admin-open",renderAdminBooks);
+  window.addEventListener("84books:admin-open",()=>{
+    renderAdminBooks();
+    renderAdminAuthorSubmissions();
+  });
 
   window.addEventListener("84books:download-book",async event=>{
     const path=event.detail&&event.detail.path;
