@@ -94,3 +94,22 @@ Não armazenar palavras-passe, PIN, OTP, CVV ou números completos de cartão. G
 ## 9. Limites e validação
 
 A estrutura SQL é a base de segurança e contabilidade, não substitui integração de fornecedores, revisão fiscal ou revisão jurídica. A política e o contrato são minutas até validação profissional.
+
+## 10. Portal de autores — interface inicial implementada
+
+A área de membros inclui agora a aba **Publicar livro** para todos os membros autenticados. O formulário recolhe título, nome público, categoria, coautores, sinopse, manuscrito, capa opcional, nome legal, declaração de direitos e confirmação de leitura da minuta provisória.
+
+O navegador envia os manuscritos para buckets privados. Os registos são criados em estado `draft`, a versão ativa da minuta é consultada no banco, o servidor grava a confirmação de análise editorial e, por fim, a submissão passa a `submitted`.
+
+A confirmação da versão 1.0 é apenas uma autorização para análise editorial. **Não constitui o contrato definitivo nem autoriza a publicação**. Antes de disponibilizar a obra, a equipa deverá apresentar um contrato final revisto juridicamente e preenchido com as condições específicas.
+
+Na aba **Administração**, a equipa vê a fila editorial, abre links temporários para os ficheiros privados e pode marcar a submissão como em análise, pedir correções, aprovar ou recusar. As notas apresentadas ao autor ficam visíveis no seu painel.
+
+A aprovação editorial não publica automaticamente o livro: a equipa ainda verifica os direitos, prepara a ficha bibliográfica, escolhe a modalidade comercial e conclui o contrato definitivo antes de criar/publicar a ficha em `books`.
+
+## 11. Limites atuais do portal
+
+- Não existe assinatura eletrónica qualificada nem validação jurídica do contrato.
+- O portal não faz pagamentos nem calcula rendimentos reais ainda.
+- A fila editorial e o envio de ficheiros foram implementados, mas o fluxo completo precisa de teste com uma conta de autor normal e uma conta administradora.
+- Os links de análise do manuscrito são temporários e não devem ser partilhados fora da equipa editorial.
