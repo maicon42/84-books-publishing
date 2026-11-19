@@ -516,3 +516,16 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
   .pdf-reader-toolbar-spacer{display:none}
   .pdf-reader-viewport{min-height:300px;max-height:72vh;padding:12px 5px}
 }
+
+
+/* Política editorial e direitos de autor */
+.rights-policy{padding-top:64px;padding-bottom:72px;border-top:1px solid var(--line,rgba(120,120,120,.18));}
+.rights-policy h2{margin:10px 0 14px;font-family:"Playfair Display",serif;font-size:clamp(1.8rem,4vw,2.6rem);}
+.rights-policy>p{max-width:850px;line-height:1.75;color:var(--muted,#777);}
+.rights-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:26px 0;}
+.rights-policy-grid article{padding:20px;border:1px solid var(--line,rgba(120,120,120,.18));border-radius:16px;background:var(--surface,rgba(120,120,120,.04));}
+.rights-policy-grid strong{display:block;margin-bottom:8px;}
+.rights-policy-grid p{margin:0;line-height:1.65;color:var(--muted,#777);}
+.rights-policy .rights-policy-note{padding:16px 18px;border-left:3px solid var(--accent,#b99a5b);background:var(--surface,rgba(120,120,120,.04));}
+.footer-rights-link{color:inherit;text-decoration:underline;text-underline-offset:3px;font-size:.82rem;}
+@media(max-width:640px){.rights-policy{padding-top:42px;padding-bottom:48px}.rights-policy-grid{grid-template-columns:1fr}.rights-policy-grid article{padding:16px}}
