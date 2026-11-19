@@ -126,6 +126,20 @@ on conflict (id) do update set
   avatar_path=excluded.avatar_path, show_followers=excluded.show_followers,
   show_following=excluded.show_following;
 
+create table if not exists public.follows (
+  id uuid primary key default gen_random_uuid(),
+  follower_id uuid not null references public.profiles(id) on delete cascade,
+  followed_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  constraint follows_no_self check (follower_id <> followed_id),
+  constraint follows_unique unique (follower_id, followed_id)
+);
+create index if not exists follows_followed_idx on public.follows(followed_id, created_at desc);
+create index if not exists follows_follower_idx on public.follows(follower_id, created_at desc);
+alter table public.follows enable row level security;
+grant select, insert, delete on public.follows to anon, authenticated;
+
+
 create or replace view public.public_profiles
 with (security_invoker = true, security_barrier = true)
 as
@@ -141,18 +155,6 @@ select
 from public.public_profile_directory d;
 grant select on public.public_profiles to anon, authenticated;
 
-create table if not exists public.follows (
-  id uuid primary key default gen_random_uuid(),
-  follower_id uuid not null references public.profiles(id) on delete cascade,
-  followed_id uuid not null references public.profiles(id) on delete cascade,
-  created_at timestamptz not null default now(),
-  constraint follows_no_self check (follower_id <> followed_id),
-  constraint follows_unique unique (follower_id, followed_id)
-);
-create index if not exists follows_followed_idx on public.follows(followed_id, created_at desc);
-create index if not exists follows_follower_idx on public.follows(follower_id, created_at desc);
-alter table public.follows enable row level security;
-grant select, insert, delete on public.follows to anon, authenticated;
 
 drop policy if exists "84Books ver seguidores de perfis públicos" on public.follows;
 create policy "84Books ver seguidores de perfis públicos"
@@ -328,7 +330,8 @@ begin
   end if;
   return new;
 end;
-$$;
+$;
+revoke all on function public.handle_new_84books_user() from public, anon, authenticated;
 
 drop trigger if exists on_auth_user_created_84books on auth.users;
 create trigger on_auth_user_created_84books
