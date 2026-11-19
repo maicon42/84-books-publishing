@@ -40,7 +40,7 @@
           const name=item.name&&item.name.common;
           const root=item.idd&&item.idd.root;
           const suffixes=item.idd&&item.idd.suffixes;
-          const dial=root?(root+((Array.isArray(suffixes)&&suffixes.length)?suffixes[0]:"")):"";
+          const dial=root?(root+((Array.isArray(suffixes)&&suffixes.length===1)?suffixes[0]:"")):"";
           return name&&dial? [name,dial]:null;
         }).filter(Boolean);
         const unique=[...new Map(all.map(item=>[item[0].toLocaleLowerCase("pt"),item])).values()]
