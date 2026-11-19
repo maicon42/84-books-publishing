@@ -109,7 +109,7 @@
   if(profileType){
     [["promoter","Promotor"],["sponsor","Patrocinador"],["agent","Agente"],["explorer","Explorador"],["listener","Ouvinte"],["art_lover","Amante da leitura"]].forEach(([v,t])=>{if(![...profileType.options].some(o=>o.value===v)){const o=document.createElement("option");o.value=v;o.textContent=t;profileType.appendChild(o);}});
   }
-  const confirmLabel=document.createElement("label");confirmLabel.className="auth-field";confirmLabel.id="authConfirmLabel";confirmLabel.textContent="Confirmar palavra-passe";
+  confirmLabel=document.createElement("label");confirmLabel.className="auth-field";confirmLabel.id="authConfirmLabel";confirmLabel.textContent="Confirmar palavra-passe";
   confirmInput=document.createElement("input");confirmInput.id="authPasswordConfirm";confirmInput.type="password";confirmInput.autocomplete="new-password";confirmInput.minLength=8;confirmInput.placeholder="Digite novamente a palavra-passe";
   confirmLabel.appendChild(confirmInput);passwordLabel.after(confirmLabel);confirmLabel.hidden=true;
   function addPasswordToggle(input){
@@ -149,6 +149,7 @@
     confirmLabel.hidden=!signupMode;confirmInput.required=signupMode;
     const submit=$("authSubmit");if(submit)submit.textContent=signupMode?"Criar a minha conta":"Iniciar sessão";
     const forgot=$("forgotPassword");if(forgot)forgot.hidden=signupMode;
+    const countrySearch=$("authCountrySearch");if(countrySearch)countrySearch.required=false;
     clearAllErrors();
   }
   document.addEventListener("click",event=>{if(event.target.closest("[data-auth-mode]"))setTimeout(configureMode,0);});
