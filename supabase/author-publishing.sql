@@ -369,6 +369,68 @@ on storage.objects for all to authenticated
 using (bucket_id = '84books-author-covers' and private.is_84books_admin())
 with check (bucket_id = '84books-author-covers' and private.is_84books_admin());
 
+-- 9. Proteção dos campos administrativos das submissões.
+-- O autor não pode aprovar a própria obra, escrever notas internas nem definir o livro publicado.
+create or replace function public.guard_84books_author_submission()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if not private.is_84books_admin() then
+    if tg_op = 'INSERT' then
+      if coalesce(new.admin_notes,'') <> ''
+         or new.reviewed_by is not null
+         or new.reviewed_at is not null
+         or new.linked_book_id is not null then
+        raise exception 'Os campos de revisão são exclusivos da equipa editorial.';
+      end if;
+      new.created_at := now();
+      new.updated_at := now();
+    else
+      if new.author_id is distinct from old.author_id
+         or new.admin_notes is distinct from old.admin_notes
+         or new.reviewed_by is distinct from old.reviewed_by
+         or new.reviewed_at is distinct from old.reviewed_at
+         or new.linked_book_id is distinct from old.linked_book_id
+         or new.created_at is distinct from old.created_at then
+        raise exception 'Não pode alterar os campos internos da revisão editorial.';
+      end if;
+      if new.status not in ('draft','submitted','changes_requested') then
+        raise exception 'Só a equipa editorial pode aprovar ou recusar uma submissão.';
+      end if;
+      new.updated_at := now();
+    end if;
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.guard_84books_author_submission() from public, anon, authenticated;
+drop trigger if exists guard_84books_author_submission on public.author_submissions;
+create trigger guard_84books_author_submission
+before insert or update on public.author_submissions
+for each row execute function public.guard_84books_author_submission();
+
+-- 10. A data da aceitação é definida pelo servidor, nunca pelo relógio do navegador.
+create or replace function public.stamp_84books_contract_acceptance()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  if not private.is_84books_admin() then
+    new.accepted_at := now();
+    new.created_at := now();
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.stamp_84books_contract_acceptance() from public, anon, authenticated;
+drop trigger if exists stamp_84books_contract_acceptance on public.author_contract_acceptances;
+create trigger stamp_84books_contract_acceptance
+before insert on public.author_contract_acceptances
+for each row execute function public.stamp_84books_contract_acceptance();
+
 commit;
 
 -- Verificação rápida após execução:
