@@ -112,7 +112,7 @@
   document.addEventListener("click",event=>{
     const tab=event.target.closest("[data-auth-mode]");
     if(tab)configureMode();
-  },true);
+  });
   const originalCountry= $("authCountry");
   const originalPhone=$("authPhone");
   function setMessage(text,error){
