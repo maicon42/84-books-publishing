@@ -352,6 +352,7 @@
         <section class="member-panel" data-member-panel="profile">
           <div class="member-panel-heading"><span>PERFIL PESSOAL</span><h3>As suas informações</h3><p>Preencha apenas o que quiser. Os dados pessoais do perfil não são publicados automaticamente.</p></div>
           <form id="profileForm" class="profile-form">
+            <div class="profile-avatar-editor"><div class="profile-avatar-preview" id="profileAvatarPreview">84</div><label class="profile-field">Fotografia do perfil<input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label class="privacy-check"><input id="profileAvatarPublic" type="checkbox" checked><span>Permitir que a minha fotografia seja vista no perfil público</span></label></div>
             <label class="profile-field">Nome completo<input id="profileFullName" type="text" autocomplete="name" required maxlength="120"></label>
             <label class="profile-field">Nome público / nome artístico<input id="profileDisplayName" type="text" maxlength="60" placeholder="Como quer ser conhecido?"></label>
             <div class="profile-grid">
@@ -373,6 +374,16 @@
               </label>
             </div>
             <label class="profile-field">Biografia curta<textarea id="profileBio" rows="4" maxlength="500" placeholder="Fale um pouco sobre si, os seus livros ou os seus interesses..."></textarea></label>
+            <div class="privacy-settings"><strong>Privacidade do perfil</strong><p>Escolha o que outras pessoas podem consultar. Os dados privados continuam disponíveis para si e para as funções administrativas necessárias.</p>
+              <label class="privacy-check"><input id="profileIsPublic" type="checkbox" checked><span>O meu perfil pode aparecer na comunidade</span></label>
+              <label class="privacy-check"><input id="profileShowFullName" type="checkbox"><span>Mostrar o meu nome civil completo</span></label>
+              <label class="privacy-check"><input id="profileShowCountry" type="checkbox" checked><span>Mostrar o meu país</span></label>
+              <label class="privacy-check"><input id="profileShowPhone" type="checkbox"><span>Mostrar o meu telefone</span></label>
+              <label class="privacy-check"><input id="profileShowBirthDate" type="checkbox"><span>Mostrar a minha data de nascimento</span></label>
+              <label class="privacy-check"><input id="profileShowGender" type="checkbox"><span>Mostrar o meu género</span></label>
+              <label class="privacy-check"><input id="profileShowFollowers" type="checkbox" checked><span>Mostrar quem me segue</span></label>
+              <label class="privacy-check"><input id="profileShowFollowing" type="checkbox" checked><span>Mostrar quem eu sigo</span></label>
+            </div>
             <div class="profile-save-row"><p id="profileMessage" class="profile-message" role="status" aria-live="polite"></p><button class="auth-submit profile-save" id="profileSave" type="submit">Guardar perfil</button></div>
           </form>
         </section>
@@ -386,10 +397,9 @@
         </section>
         <section class="member-panel" data-member-panel="community" hidden>
           <div class="member-panel-heading"><span>84 BOOKS COMMUNITY</span><h3>Comunidade de leitores e autores</h3><p>Um espaço para partilhar ideias, descobrir autores e conversar sobre livros.</p></div>
-          <div class="member-feature-grid">
-            <article class="member-feature"><span>✎</span><h4>Comentários nos livros</h4><p>Os membros poderão avaliar e comentar as publicações.</p><small>EM PREPARAÇÃO</small></article>
-            <article class="member-feature"><span>◉</span><h4>Perfil público de autor</h4><p>Autores e artistas poderão apresentar a sua biografia e as suas obras.</p><small>EM PREPARAÇÃO</small></article>
-            <article class="member-feature"><span>✉</span><h4>Mensagens privadas</h4><p>Conversas entre leitores e autores, com ferramentas de segurança e denúncia.</p><small>EM PREPARAÇÃO</small></article>
+          <div class="community-layout">
+            <section class="community-card"><div class="admin-list-heading"><h4>Descobrir leitores e autores</h4><button class="member-secondary" id="communityRefresh" type="button">Atualizar</button></div><input id="communitySearch" class="community-search" type="search" placeholder="Pesquisar por nome ou país"><div id="communityProfiles" class="community-profiles"><p class="admin-empty">A carregar perfis públicos...</p></div></section>
+            <section class="community-card"><h4>Mensagens privadas</h4><label class="profile-field">Conversar com<select id="messageRecipient"><option value="">Escolha uma pessoa</option></select></label><div id="messageThread" class="message-thread"><p class="admin-empty">Escolha uma pessoa para abrir a conversa.</p></div><form id="messageForm" class="message-form"><textarea id="messageBody" rows="3" maxlength="5000" placeholder="Escreva uma mensagem..." required></textarea><button class="auth-submit" type="submit">Enviar mensagem</button><p id="messageStatus" class="profile-message" role="status"></p></form></section>
           </div>
         </section>
         <section class="member-panel author-panel" data-member-panel="author" hidden>
@@ -426,9 +436,12 @@
           </form>
           <div class="admin-list-heading"><h4>As minhas submissões</h4><button class="member-secondary" id="authorRefreshSubmissions" type="button">Atualizar</button></div>
           <div id="authorSubmissionsList" class="admin-books-list"><p class="admin-empty">As suas submissões aparecerão aqui.</p></div>
+          <div class="admin-list-heading"><h4>Os meus livros publicados</h4><span>Controle a visibilidade das obras aceites.</span></div><div id="myPublishedBooks" class="admin-books-list"><p class="admin-empty">As suas obras aparecerão aqui.</p></div>
         </section>
         <section class="member-panel admin-panel" data-member-panel="admin" hidden>
-          <div class="member-panel-heading"><span>CONTROLO DA EDITORA</span><h3>Painel de administração</h3><p>Publique novos livros, atualize os dados das obras e retire publicações do catálogo.</p></div>
+          <div class="member-panel-heading"><span>CONTROLO DA EDITORA</span><h3>Painel de administração</h3><p>Gira a identidade visual, consulte os membros e administre as publicações.</p></div>
+          <section class="admin-branding-box"><h4>Identidade visual da editora</h4><p>O administrador pode atualizar o logotipo oficial. A alteração será apresentada no cabeçalho e no rodapé do site.</p><form id="adminBrandForm"><label class="profile-field">Novo logotipo (PNG, JPG, WEBP ou SVG)<input id="adminBrandLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label><button class="auth-submit" id="adminBrandSave" type="submit">Atualizar logotipo</button><p id="adminBrandMessage" class="profile-message" role="status"></p></form></section>
+          <section class="admin-users-box"><div class="admin-list-heading"><h4>Utilizadores registados</h4><button class="member-secondary" id="adminRefreshUsers" type="button">Atualizar utilizadores</button></div><div id="adminUsersList" class="admin-books-list"><p class="admin-empty">A carregar utilizadores...</p></div></section>
           <div class="admin-list-heading"><h4>Submissões de autores</h4><button class="member-secondary" id="adminRefreshSubmissions" type="button">Atualizar submissões</button></div>
           <div id="adminAuthorSubmissionsList" class="admin-books-list"><p class="admin-empty">A carregar submissões...</p></div>
           <form id="adminBookForm" class="admin-book-form">
@@ -509,7 +522,15 @@
       <p class="auth-intro">Entre na sua conta ou crie gratuitamente o seu espaço de leitura.</p>
       <div class="auth-tabs"><button type="button" class="auth-tab active" data-auth-mode="login">Iniciar sessão</button><button type="button" class="auth-tab" data-auth-mode="signup">Criar conta</button></div>
       <form id="authForm">
-        <label id="fullNameWrap" class="auth-field" hidden>Nome completo<input id="authFullName" type="text" autocomplete="name" placeholder="O seu nome"></label>
+        <div id="signupFields" class="signup-fields" hidden>
+          <label class="auth-field">Nome completo (conforme documento oficial)<input id="authFullName" type="text" autocomplete="name" maxlength="120" placeholder="Nome civil completo"></label>
+          <label class="auth-field">Nome que deseja usar na plataforma<input id="authDisplayName" type="text" maxlength="60" placeholder="Nome público ou artístico"></label>
+          <label class="auth-field">País<input id="authCountry" type="text" autocomplete="country-name" maxlength="80" placeholder="Ex.: Angola"></label>
+          <label class="auth-field">Telefone com indicativo internacional<input id="authPhone" type="tel" autocomplete="tel" placeholder="+244 9XX XXX XXX"></label>
+          <label class="auth-field">Data de nascimento (conforme documento oficial)<input id="authBirthDate" type="date" autocomplete="bday"></label>
+          <label class="auth-field">Tipo de conta<select id="authProfileType"><option value="reader">Leitor / leitora</option><option value="author">Autor / escritora</option><option value="author_artist">Autor e artista</option></select></label>
+          <p class="auth-privacy-note">A data de nascimento, o telefone e o nome civil ficam privados por padrão. Nunca serão publicados automaticamente no seu perfil.</p>
+        </div>
         <label class="auth-field">E-mail<input id="authEmail" type="email" autocomplete="email" placeholder="exemplo@email.com" required></label>
         <label class="auth-field">Palavra-passe<input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Mínimo de 6 caracteres" required></label>
         <button class="auth-submit" id="authSubmit" type="submit">Entrar na minha conta</button>
@@ -522,6 +543,6 @@
     </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261120-public-access-gate-1"></script>
+  <script src="app.js?v=20261120-social-privacy-2"></script>
 </body>
 </html>
