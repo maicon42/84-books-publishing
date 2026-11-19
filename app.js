@@ -1882,6 +1882,7 @@ renderRoute();
         if(!signupMetadata.full_name||!signupMetadata.display_name||!signupMetadata.country||!signupMetadata.phone||!signupMetadata.birth_date){
           throw new Error("Preencha todos os dados do cadastro antes de continuar.");
         }
+        if(!/^\\+\\d{1,4}\\s?\\d[\\d\\s()\\-]{5,}$/.test(signupMetadata.phone)){throw new Error("Introduza o telefone com o indicativo internacional, por exemplo +244 9XX XXX XXX.");}
         if(new Date(signupMetadata.birth_date)>new Date()){
           throw new Error("A data de nascimento não pode estar no futuro.");
         }
