@@ -505,7 +505,8 @@ renderRoute();
     description:document.getElementById("adminBookDescription"),
     preview:document.getElementById("adminBookPreview"),
     cover:document.getElementById("adminBookCover"),
-    file:document.getElementById("adminBookFile")
+    file:document.getElementById("adminBookFile"),
+    authorUserId:document.getElementById("adminBookAuthorUserId")
   };
   function syncAdminRightsControls(){
     const external=adminFields.origin.value==="external_reference";
@@ -805,6 +806,8 @@ renderRoute();
     if(!node||current84Role!=="admin"||!currentUser)return;
     const {data,error}=await supabaseClient.from("admin_user_directory").select("id,full_name,display_name,country,profile_type,created_at").order("created_at",{ascending:false});
     if(error){node.innerHTML='<p class="admin-empty">Não foi possível carregar a lista de utilizadores.</p>';return;}
+    const ownerSelect=document.getElementById("adminBookAuthorUserId");
+    if(ownerSelect)ownerSelect.innerHTML='<option value="">Sem associação</option>'+(data||[]).map(user=>'<option value="'+user.id+'">'+escapeHTML(user.display_name||user.full_name||"Utilizador")+' · '+escapeHTML(user.country||"")+'</option>').join("");
     node.innerHTML=(data||[]).map(user=>'<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(user.display_name||user.full_name||"Utilizador")+'</strong><span>'+escapeHTML(user.full_name||"Nome civil não indicado")+' · '+escapeHTML(user.country||"País não indicado")+' · '+escapeHTML(user.profile_type||"reader")+'</span><small>Conta criada: '+new Date(user.created_at).toLocaleDateString("pt-AO")+'</small></div></article>').join("")||'<p class="admin-empty">Ainda não há utilizadores registados.</p>';
   }
 
@@ -813,13 +816,16 @@ renderRoute();
     const select=document.getElementById("messageRecipient");
     if(!node||!currentUser)return;
     node.innerHTML='<p class="admin-empty">A carregar perfis públicos...</p>';
-    const [profilesResult,followingResult]=await Promise.all([
+    const [profilesResult,followingResult,allFollowsResult]=await Promise.all([
       supabaseClient.from("public_profiles").select("id,display_name,full_name,country,profile_type,bio,avatar_path,follower_count,following_count,show_followers,show_following").order("created_at",{ascending:false}),
-      supabaseClient.from("follows").select("followed_id").eq("follower_id",currentUser.id)
+      supabaseClient.from("follows").select("followed_id").eq("follower_id",currentUser.id),
+      supabaseClient.from("follows").select("follower_id,followed_id")
     ]);
     if(profilesResult.error){node.innerHTML='<p class="admin-empty">Não foi possível carregar os perfis públicos.</p>';return;}
     const profiles=(profilesResult.data||[]).filter(p=>p.id!==currentUser.id);
     const followed=new Set((followingResult.data||[]).map(f=>f.followed_id));
+    const allFollows=allFollowsResult.data||[];
+    const profileById=new Map(profilesResult.data.map(p=>[p.id,p]));
     window._84CommunityProfiles=profiles;
     if(select)select.innerHTML='<option value="">Escolha uma pessoa</option>'+profiles.map(p=>'<option value="'+p.id+'">'+escapeHTML(p.display_name||p.full_name||"Utilizador")+'</option>').join("");
     const term=(document.getElementById("communitySearch")?.value||"").toLowerCase();
@@ -827,7 +833,9 @@ renderRoute();
     const cards=await Promise.all(filtered.map(async p=>{
       let avatar="";
       if(p.avatar_path){const signed=await supabaseClient.storage.from("84books-avatars").createSignedUrl(p.avatar_path,1800);if(!signed.error&&signed.data)avatar=signed.data.signedUrl;}
-      return '<article class="community-profile-card"><div class="community-avatar">'+(avatar?'<img src="'+avatar+'" alt="">':'84')+'</div><div class="community-profile-info"><strong>'+escapeHTML(p.display_name||p.full_name||"Utilizador")+'</strong><span>'+escapeHTML(p.country||"País não indicado")+' · '+escapeHTML(p.profile_type||"Leitor")+'</span><small>'+(p.show_followers?p.follower_count+" seguidores":"Seguidores privados")+' · '+(p.show_following?p.following_count+" a seguir":"Lista privada")+'</small><p>'+escapeHTML(p.bio||"")+'</p></div><div class="community-profile-actions"><button type="button" data-follow-user="'+p.id+'">'+(followed.has(p.id)?"Deixar de seguir":"Seguir")+'</button><button type="button" data-message-user="'+p.id+'">Mensagem</button></div></article>';
+      const followerNames=p.show_followers?allFollows.filter(f=>f.followed_id===p.id).map(f=>profileById.get(f.follower_id)?.display_name||"Membro").slice(0,8):[];
+      const followingNames=p.show_following?allFollows.filter(f=>f.follower_id===p.id).map(f=>profileById.get(f.followed_id)?.display_name||"Membro").slice(0,8):[];
+      return '<article class="community-profile-card"><div class="community-avatar">'+(avatar?'<img src="'+avatar+'" alt="">':'84')+'</div><div class="community-profile-info"><strong>'+escapeHTML(p.display_name||p.full_name||"Utilizador")+'</strong><span>'+escapeHTML(p.country||"País não indicado")+' · '+escapeHTML(p.profile_type||"Leitor")+'</span><small>'+(p.show_followers?p.follower_count+" seguidores":"Seguidores privados")+' · '+(p.show_following?p.following_count+" a seguir":"Lista privada")+'</small><p>'+escapeHTML(p.bio||"")+'</p>'+(p.show_followers?'<details><summary>Ver seguidores</summary><small>'+escapeHTML(followerNames.join(", ")||"Ainda sem seguidores visíveis")+'</small></details>':'')+(p.show_following?'<details><summary>Ver quem segue</summary><small>'+escapeHTML(followingNames.join(", ")||"Ainda não segue ninguém")+'</small></details>':'')+'</div><div class="community-profile-actions"><button type="button" data-follow-user="'+p.id+'">'+(followed.has(p.id)?"Deixar de seguir":"Seguir")+'</button><button type="button" data-message-user="'+p.id+'">Mensagem</button></div></article>';
     }));
     node.innerHTML=cards.join("")||'<p class="admin-empty">Não foram encontrados perfis públicos.</p>';
   }
@@ -1422,6 +1430,7 @@ renderRoute();
     adminFields.isbn.value="";
     adminFields.publisher.value="";
     adminFields.edition.value="";
+    if(adminFields.authorUserId)adminFields.authorUserId.value="";
     adminFields.cover.disabled=false;
     adminFields.file.disabled=false;
     adminFields.preview.disabled=false;
@@ -1436,7 +1445,7 @@ renderRoute();
     if(current84Role!=="admin"||!currentUser)return;
     adminList.innerHTML='<p class="admin-empty">A carregar as publicações...</p>';
     const {data,error}=await supabaseClient.from("books")
-      .select("id,title,author,category,book_type,price,status,cover_path,file_path,description,preview_text,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count")
+      .select("id,title,author,author_user_id,is_public,category,book_type,price,status,cover_path,file_path,description,preview_text,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count")
       .order("created_at",{ascending:false});
     if(error){
       adminList.innerHTML='<p class="admin-empty">Não foi possível carregar os livros. Confirme se executou supabase/admin-books.sql.</p>';
@@ -1448,7 +1457,7 @@ renderRoute();
       return;
     }
     adminList.innerHTML=adminBookCache.map(book=>{
-      const state=book.status==="published"?"PUBLICADO":"RASCUNHO";
+      const state=(book.status==="published"?"PUBLICADO":"RASCUNHO")+" · "+(book.is_public===false?"PRIVADO":"PÚBLICO");
       const type=book.book_type==="gratuito"?"Gratuito":book.book_type==="pago"?"Pago":"Em preparação";
       const origin=book.publication_origin==="external_reference"?"Referência externa":book.publication_origin==="licensed"?"Licenciado":book.publication_origin==="public_domain"?"Domínio público":"Original";
       const rights=book.rights_status==="verified"?"Direitos verificados":book.rights_status==="not_required"?"Sem direitos patrimoniais pendentes":book.rights_status==="rejected"?"Direitos recusados":"Direitos por verificar";
@@ -1500,6 +1509,7 @@ renderRoute();
       const payload={
         title:adminFields.title.value.trim(),
         author:adminFields.author.value.trim(),
+        author_user_id:adminFields.authorUserId.value||null,
         category:adminFields.category.value.trim()||"Geral",
         description:adminFields.description.value.trim(),
         preview_text:adminFields.preview.value.trim(),
@@ -1565,6 +1575,7 @@ renderRoute();
       adminFields.isbn.value=book.isbn||"";
       adminFields.publisher.value=book.publisher||"";
       adminFields.edition.value=book.edition||"";
+      if(adminFields.authorUserId)adminFields.authorUserId.value=book.author_user_id||"";
       syncAdminRightsControls();
       adminFields.description.value=book.description||"";
       adminFields.preview.value=book.preview_text||"";
@@ -1600,6 +1611,7 @@ renderRoute();
   adminCancel.addEventListener("click",resetAdminForm);
   document.getElementById("adminRefreshBooks").addEventListener("click",renderAdminBooks);
   window.addEventListener("84books:admin-open",()=>{
+    loadBranding();
     renderAdminBooks();
     renderAdminAuthorSubmissions();
     loadAdminUsers();
