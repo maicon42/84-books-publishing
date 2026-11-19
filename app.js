@@ -1061,7 +1061,7 @@ renderRoute();
     const phone = profile.phone || "";
     const phoneMatch = phone.match(/^(\+\d+)\s*(.*)$/);
     if(phoneMatch){
-      if([...profileFields.dialCode.options].some(option => option.value === phoneMatch[1])) profileFields.dialCode.value = phoneMatch[1];
+      profileFields.dialCode.value = phoneMatch[1];
       profileFields.phone.value = phoneMatch[2];
     } else {
       profileFields.phone.value = phone;
@@ -1112,7 +1112,9 @@ renderRoute();
     profileSave.textContent="A guardar...";
     profileMessage.classList.remove("error");
     const phoneNumber = profileFields.phone.value.trim();
-    const fullPhone = phoneNumber ? profileFields.dialCode.value + " " + phoneNumber : "";
+    const dialCode=profileFields.dialCode.value.trim();
+    if(phoneNumber&&!/^\\+\\d{1,4}$/.test(dialCode)){profileMessage.textContent="Indique um indicativo internacional válido, por exemplo +244.";profileMessage.classList.add("error");profileSave.disabled=false;profileSave.textContent="Guardar perfil";return;}
+    const fullPhone = phoneNumber ? dialCode + " " + phoneNumber : "";
     const avatarFile=profileFields.avatarFile.files[0]||null;
     if(avatarFile&&(!/^image\/(jpeg|png|webp)$/.test(avatarFile.type)||avatarFile.size>5*1024*1024)){
       profileMessage.textContent="A fotografia deve ser JPG, PNG ou WEBP e ter no máximo 5 MB.";
@@ -1191,7 +1193,7 @@ renderRoute();
   async function loadMyPublishedBooks(){
     const node=document.getElementById("myPublishedBooks");
     if(!node||!currentUser)return;
-    const {data,error}=await supabaseClient.from("books").select("id,title,author,status,is_public").eq("author_user_id",currentUser.id).order("created_at",{ascending:false});
+    const {data,error}=await supabaseClient.from("books").select("id,title,author,status,is_public").eq("author_user_id",currentUser.id).eq("status","published").order("created_at",{ascending:false});
     if(error){node.innerHTML='<p class="admin-empty">Não foi possível carregar as suas publicações.</p>';return;}
     node.innerHTML=(data||[]).map(book=>'<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(book.title)+'</strong><span>'+escapeHTML(book.author)+' · '+(book.is_public?"Público":"Privado")+'</span></div><label class="privacy-check"><input type="checkbox" data-book-visibility="'+book.id+'" '+(book.is_public?"checked":"")+'> <span>Livro visível ao público</span></label></article>').join("")||'<p class="admin-empty">Ainda não existem livros publicados ligados a esta conta. A equipa editorial terá de associar a obra ao seu perfil após a aprovação.</p>';
     node.onchange=async event=>{
