@@ -55,3 +55,6 @@
 .auth-inline-error{display:block;min-height:0;margin:5px 0 0;color:#d85c54;font-size:11px;line-height:1.45}
 .auth-field [aria-invalid="true"],.auth-country-picker [aria-invalid="true"]{border-color:#d85c54!important;outline-color:#d85c54}
 #authPasswordConfirm{width:100%}
+
+/* A confirmação só aparece durante o registo; nunca no início de sessão. */
+#authConfirmLabel[hidden]{display:none!important}
