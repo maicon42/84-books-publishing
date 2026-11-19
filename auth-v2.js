@@ -244,15 +244,16 @@
     if(forgot.disabled)return;
     const value=identifierInput.value.trim();
     if(!value.includes("@")){setError(identifierInput,"Para recuperar a palavra-passe, introduza o e-mail associado à conta.");identifierInput.focus();return;}
-    forgot.disabled=true;forgot.textContent="A enviar pedido...";clearAllErrors();
+    clearAllErrors();
+    const until=Date.now()+60000;
+    try{localStorage.setItem(recoveryCooldownKey,String(until));}catch(_){}
+    startRecoveryCooldown(until);
+    setMessage("A enviar o pedido de recuperação...");
     try{
       const {error}=await client.auth.resetPasswordForEmail(value,{redirectTo:window.location.href.split("#")[0]});
       if(error)throw error;
-      const until=Date.now()+60000;
-      try{localStorage.setItem(recoveryCooldownKey,String(until));}catch(_){}
-      startRecoveryCooldown(until);
       setMessage("Se o endereço estiver registado, receberá um e-mail com o link para criar uma nova palavra-passe. Pode solicitar outro link quando terminar a contagem.");
-    }catch(error){forgot.disabled=false;forgot.textContent="Esqueci a minha palavra-passe";setMessage(error.message||"Não foi possível enviar o pedido. Aguarde um pouco e tente novamente.",true);}
+    }catch(error){setMessage(error.message||"Não foi possível enviar o pedido. O botão continuará bloqueado até terminar a contagem de 60 segundos.",true);}
   },true);
 
   let recoveryPanel=null;
