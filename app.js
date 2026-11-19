@@ -1481,6 +1481,135 @@ renderRoute();
     return;
   }
   supabaseClient = window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
+
+  // Segurança de sessão: aviso aos 55 minutos e encerramento aos 60 minutos sem atividade.
+  const IDLE_WARNING_MS = 55 * 60 * 1000;
+  const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
+  let idleLastActivityAt = Date.now();
+  let idleTimer = null;
+  let idleUserId = null;
+  let idleWarningVisible = false;
+  let idleSigningOut = false;
+
+  const idleDialog = document.createElement("div");
+  idleDialog.id = "idleSessionDialog";
+  idleDialog.hidden = true;
+  idleDialog.setAttribute("role","alertdialog");
+  idleDialog.setAttribute("aria-modal","true");
+  idleDialog.setAttribute("aria-labelledby","idleSessionTitle");
+  idleDialog.innerHTML =
+    '<div class="idle-session-card">' +
+      '<span class="idle-session-kicker">84 BOOKS PUBLISHING · SEGURANÇA</span>' +
+      '<h2 id="idleSessionTitle">A sua sessão está prestes a terminar</h2>' +
+      '<p>Não detetámos atividade na sua conta há algum tempo. Por segurança, a sessão será encerrada ao completar 60 minutos de inatividade.</p>' +
+      '<p class="idle-session-time">Faltam aproximadamente 5 minutos.</p>' +
+      '<div class="idle-session-actions">' +
+        '<button type="button" id="idleContinueButton" class="idle-session-continue">Continuar sessão</button>' +
+        '<button type="button" id="idleSignOutButton" class="idle-session-exit">Terminar sessão agora</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(idleDialog);
+
+  function hideIdleWarning(){
+    idleWarningVisible = false;
+    idleDialog.hidden = true;
+  }
+
+  function stopIdleMonitoring(){
+    if(idleTimer) window.clearTimeout(idleTimer);
+    idleTimer = null;
+    idleUserId = null;
+    hideIdleWarning();
+  }
+
+  function scheduleIdleCheck(){
+    if(idleTimer) window.clearTimeout(idleTimer);
+    if(!current84User || idleSigningOut) return;
+    const elapsed = Date.now() - idleLastActivityAt;
+    const nextLimit = idleWarningVisible ? IDLE_TIMEOUT_MS : IDLE_WARNING_MS;
+    const delay = Math.max(250, nextLimit - elapsed);
+    idleTimer = window.setTimeout(checkIdleSession, delay);
+  }
+
+  function checkIdleSession(){
+    if(!current84User || idleSigningOut) return;
+    const elapsed = Date.now() - idleLastActivityAt;
+    if(elapsed >= IDLE_TIMEOUT_MS){
+      finishIdleSession();
+      return;
+    }
+    if(elapsed >= IDLE_WARNING_MS && !idleWarningVisible){
+      idleWarningVisible = true;
+      idleDialog.hidden = false;
+      const continueButton = document.getElementById("idleContinueButton");
+      if(continueButton) continueButton.focus();
+    }
+    scheduleIdleCheck();
+  }
+
+  function registerIdleActivity(event){
+    if(!current84User || idleSigningOut) return;
+    const target = event && event.target;
+    if(target && target.closest && target.closest("#idleSessionDialog")) return;
+    idleLastActivityAt = Date.now();
+    if(idleWarningVisible) hideIdleWarning();
+    scheduleIdleCheck();
+  }
+
+  function startIdleMonitoring(user, resetClock){
+    if(!user || !user.id){
+      stopIdleMonitoring();
+      return;
+    }
+    if(idleUserId !== user.id){
+      idleUserId = user.id;
+      idleLastActivityAt = Date.now();
+      hideIdleWarning();
+    }else if(resetClock){
+      idleLastActivityAt = Date.now();
+      hideIdleWarning();
+    }
+    scheduleIdleCheck();
+  }
+
+  async function finishIdleSession(){
+    if(!current84User || idleSigningOut) return;
+    idleSigningOut = true;
+    if(idleTimer) window.clearTimeout(idleTimer);
+    idleTimer = null;
+    hideIdleWarning();
+    try{
+      // Termina apenas a sessão deste navegador/dispositivo, sem afetar outros dispositivos.
+      const {error} = await supabaseClient.auth.signOut({scope:"local"});
+      if(error) throw error;
+      memberArea.hidden = true;
+      renderSession(null);
+      setMode("login");
+      navigate("inicio");
+      showOverlay();
+      showMessage("A sua sessão foi encerrada automaticamente após 60 minutos sem atividade. Inicie sessão novamente para continuar.");
+    }catch(error){
+      idleLastActivityAt = Date.now();
+      showMessage("Não foi possível encerrar a sessão neste momento. Verifique a ligação e tente novamente.",true);
+      scheduleIdleCheck();
+    }finally{
+      idleSigningOut = false;
+    }
+  }
+
+  ["pointerdown","keydown","input","change","click","touchstart","wheel"].forEach(eventName=>{
+    document.addEventListener(eventName,registerIdleActivity,{passive:true});
+  });
+  document.addEventListener("scroll",registerIdleActivity,{passive:true,capture:true});
+  window.addEventListener("hashchange",registerIdleActivity);
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState === "visible") checkIdleSession();
+  });
+  document.getElementById("idleContinueButton").addEventListener("click",()=>{
+    registerIdleActivity();
+  });
+  document.getElementById("idleSignOutButton").addEventListener("click",finishIdleSession);
+
   loadPublicBooks();
 
   openButton.addEventListener("click",async()=>{
@@ -1581,6 +1710,7 @@ renderRoute();
   supabaseClient.auth.onAuthStateChange((event,session)=>{
     renderSession(session);
     if(session&&session.user){
+      startIdleMonitoring(session.user,event==="SIGNED_IN");
       Promise.resolve().then(async()=>{
         await loadMemberProfile(session.user);
         authReady=true;
@@ -1593,6 +1723,7 @@ renderRoute();
         }
       });
     }else{
+      stopIdleMonitoring();
       current84Role="reader";
       setAdminVisibility();
       authReady=true;
@@ -1602,7 +1733,10 @@ renderRoute();
 
   supabaseClient.auth.getSession().then(async({data})=>{
     renderSession(data.session);
-    if(data.session&&data.session.user)await loadMemberProfile(data.session.user);
+    if(data.session&&data.session.user){
+      startIdleMonitoring(data.session.user,false);
+      await loadMemberProfile(data.session.user);
+    }
     authReady=true;
     renderRoute();
   });
