@@ -1051,7 +1051,7 @@ renderRoute();
 
   async function loadActiveAuthorContract(){
     if(!authorContractVersionNode||!supabaseClient)return;
-    authorContractVersionNode.textContent="A verificar a versão ativa do contrato...";
+    authorContractVersionNode.textContent="A verificar a versão ativa da minuta...";
     const {data,error}=await supabaseClient.from("author_contract_versions")
       .select("version,document_url")
       .eq("is_active",true)
@@ -1065,13 +1065,19 @@ renderRoute();
       return;
     }
     activeAuthorContractVersion=data.version;
-    authorContractVersionNode.textContent="Versão ativa do contrato: "+data.version;
+    authorContractVersionNode.textContent="Versão da minuta para análise editorial: "+data.version;
     if(authorContractLink&&data.document_url)authorContractLink.href=data.document_url;
     if(authorSubmissionSave)authorSubmissionSave.disabled=false;
   }
 
   async function loadAuthorSubmissions(){
     if(!currentUser||!authorSubmissionsList||!supabaseClient)return;
+    if(authorSubmissionFields.displayName&&!authorSubmissionFields.displayName.value){
+      authorSubmissionFields.displayName.value=profileFields.displayName.value||profileFields.fullName.value||(currentUser.user_metadata&&currentUser.user_metadata.full_name)||"";
+    }
+    if(authorSubmissionFields.legalName&&!authorSubmissionFields.legalName.value){
+      authorSubmissionFields.legalName.value=profileFields.fullName.value||(currentUser.user_metadata&&currentUser.user_metadata.full_name)||"";
+    }
     authorSubmissionsList.innerHTML='<p class="admin-empty">A carregar as suas submissões...</p>';
     const {data,error}=await supabaseClient.from("author_submissions")
       .select("id,title,author_display_name,category,status,admin_notes,created_at,updated_at")
@@ -1200,7 +1206,7 @@ renderRoute();
       return '<article class="author-review-card" data-submission-card="'+escapeHTML(item.id)+'">'+
         '<div class="admin-book-summary"><strong>'+escapeHTML(item.title)+'</strong><span>'+escapeHTML(item.author_display_name||"Autor sem nome público")+' · '+escapeHTML(item.category||"Geral")+'</span><span class="admin-book-status">'+escapeHTML(authorSubmissionStatusLabel(item.status))+'</span><p>'+escapeHTML(item.synopsis||"Sem sinopse.")+'</p><small>Conta do autor: '+escapeHTML(item.author_id)+'</small>'+(item.coauthors?'<p><b>Coautores:</b> '+escapeHTML(item.coauthors)+'</p>':'')+
         '<div class="author-review-files">'+(manuscriptUrl?'<a href="'+escapeHTML(manuscriptUrl)+'" target="_blank" rel="noopener">Abrir manuscrito (link temporário)</a>':'<span>Manuscrito indisponível</span>')+(coverUrl?'<a href="'+escapeHTML(coverUrl)+'" target="_blank" rel="noopener">Abrir capa</a>':'')+'</div>'+
-        '<label class="profile-field">Nota interna / resposta ao autor<textarea data-submission-notes rows="3" maxlength="2000">'+escapeHTML(item.admin_notes||"")+'</textarea></label>'+
+        '<label class="profile-field">Mensagem ao autor / nota editorial<textarea data-submission-notes rows="3" maxlength="2000">'+escapeHTML(item.admin_notes||"")+'</textarea></label>'+
         '<div class="author-review-actions">'+
         '<button type="button" data-submission-action="under_review" data-submission-id="'+escapeHTML(item.id)+'">Em análise</button>'+
         '<button type="button" data-submission-action="changes_requested" data-submission-id="'+escapeHTML(item.id)+'">Pedir correções</button>'+
