@@ -55,6 +55,9 @@ begin
 end;
 $$;
 revoke all on function public.guard_84books_publication_rights() from public, anon, authenticated;
+-- Funções chamadas apenas por triggers/event triggers não precisam ser RPC públicas.
+revoke execute on function public.handle_new_84books_user() from public, anon, authenticated;
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
 drop trigger if exists guard_84books_publication_rights on public.books;
 create trigger guard_84books_publication_rights
 before insert or update on public.books
