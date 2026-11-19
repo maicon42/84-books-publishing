@@ -23,7 +23,8 @@ Esta etapa prepara o modelo de dados, segurança e armazenamento no Supabase. N�
 | Tabela | Finalidade | Escrita permitida |
 |---|---|---|
 | `author_submissions` | Dados editoriais e estado da submissão | Autor cria/edita rascunho ou correção; admin gere |
-| `author_contract_acceptances` | Prova da versão e termos aceites | Autor apenas insere a própria aceitação; sem edição |
+| `author_contract_versions` | Registo canónico das versões ativas do contrato e dos termos | Leitura pública da versão ativa; gestão restrita à equipa/backend |
+| `author_contract_acceptances` | Prova da versão e termos aceites | Autor apenas insere a própria aceitação; snapshot e data definidos no servidor |
 | `rewarded_access_events` | Eventos de desbloqueio de leitura/download | Apenas backend verificador/admin |
 | `book_sales` | Transações e cálculo líquido por venda | Apenas backend/admin |
 | `author_royalty_statements` | Extratos agregados por obra e período | Apenas backend/admin |
@@ -40,7 +41,7 @@ A tabela `books` recebe `author_user_id` e percentagens de partilha. Um trigger 
 - Os manuscritos e capas submetidos ficam em buckets privados; cada autor só pode enviar e consultar ficheiros na pasta do seu próprio UUID.
 - A equipa administrativa pode analisar os ficheiros.
 - Não colocar `service_role`, chaves secretas, credenciais de pagamento ou tokens de fornecedores no JavaScript público.
-- A aceitação contratual é registada com versão e snapshot dos termos; não é uma assinatura qualificada por si só. A validade do mecanismo eletrónico deve ser revista juridicamente.
+- A aceitação contratual referencia uma versão ativa em `author_contract_versions`; um trigger grava o snapshot canónico e a data do servidor. O autor não consegue substituir os termos aceites. Isto não é, por si só, uma assinatura qualificada: a validade do mecanismo eletrónico deve ser revista juridicamente.
 
 ## 5. Cálculo de receitas
 
