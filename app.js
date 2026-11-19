@@ -320,18 +320,31 @@ function parseRoute(){
 }
 function renderRoute(){
   const route=parseRoute();
+  const visitor=!current84User;
+  document.body.classList.toggle("visitor-mode",visitor);
+
+  // Visitantes só podem permanecer na página inicial pública.
+  // Durante a verificação inicial da sessão, mostramos a landing page sem revelar áreas privadas.
+  if(visitor && authReady && route.page!=="inicio"){
+    window.location.hash="#/inicio";
+    return;
+  }
+
   if(route.page!=="inicio")hideFirstWelcome();
   if(route.page==="membros"&&authReady&&!current84User){
     window.location.hash="#/inicio";
-    window.dispatchEvent(new Event("84books:login-required"));
     return;
   }
   if(route.page==="membros"&&route.tab==="admin"&&authReady&&current84Role!=="admin"){window.location.hash="#/membros/profile";return;}
-  document.querySelectorAll("[data-page]").forEach(page=>page.hidden=page.dataset.page!==route.page);
-  if(route.page==="biblioteca"){
+
+  const visiblePage=visitor?"boas-vindas":route.page;
+  document.querySelectorAll("[data-page]").forEach(page=>page.hidden=page.dataset.page!==visiblePage);
+
+  if(!visitor && route.page==="biblioteca"){
     document.querySelectorAll(".filter-chip").forEach(chip=>chip.classList.toggle("selected",chip.dataset.filter===activeFilter));
     renderBooks();
   }
+
   const routeSiteMenu=document.getElementById("siteMenu"),routeMenuToggle=document.getElementById("menuToggle");
   if(routeSiteMenu)routeSiteMenu.hidden=true;
   if(routeMenuToggle)routeMenuToggle.setAttribute("aria-expanded","false");
@@ -341,15 +354,17 @@ function renderRoute(){
   });
   const mainNav=document.getElementById("mainNav");
   if(mainNav)mainNav.classList.remove("open");
-  if(route.page==="livro")renderBookDetail(route.id);
-  if(route.page==="membros"){
+
+  if(!visitor && route.page==="livro")renderBookDetail(route.id);
+  if(!visitor && route.page==="membros"){
     const allowed=["profile","library","community","author","admin"],tab=allowed.includes(route.tab)&&(route.tab!=="admin"||current84Role==="admin")?route.tab:"profile";
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
     if(tab==="admin")window.dispatchEvent(new Event("84books:admin-open"));
     if(tab==="author")window.dispatchEvent(new Event("84books:author-open"));
   }
-  const titles={inicio:"Início","boas-vindas":"Boas-vindas",biblioteca:"Biblioteca",comunidade:"Comunidade",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
+
+  const titles={inicio:visitor?"Bem-vindo":"Início","boas-vindas":"Bem-vindo",biblioteca:"Biblioteca",comunidade:"Comunidade",sobre:"Sobre nós",contacto:"Contacto",membros:"Minha área"};
   const book=route.page==="livro"?books.find(item=>item.id===route.id):null;
   document.title=book?book.title+" | 84 Books Publishing":(titles[route.page]||"84 Books Publishing")+" | 84 Books Publishing";
   window.scrollTo(0,0);
@@ -1611,6 +1626,15 @@ renderRoute();
   document.getElementById("idleSignOutButton").addEventListener("click",finishIdleSession);
 
   loadPublicBooks();
+
+  document.querySelectorAll("[data-open-signup]").forEach(button=>button.addEventListener("click",()=>{
+    setMode("signup");
+    showOverlay();
+  }));
+  document.querySelectorAll("[data-open-login]").forEach(button=>button.addEventListener("click",()=>{
+    setMode("login");
+    showOverlay();
+  }));
 
   openButton.addEventListener("click",async()=>{
     const result = await supabaseClient.auth.getSession();
