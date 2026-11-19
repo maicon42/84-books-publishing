@@ -804,7 +804,7 @@ renderRoute();
   async function loadAdminUsers(){
     const node=document.getElementById("adminUsersList");
     if(!node||current84Role!=="admin"||!currentUser)return;
-    const {data,error}=await supabaseClient.from("admin_user_directory").select("id,full_name,display_name,country,profile_type,created_at").order("created_at",{ascending:false});
+    const {data,error}=await supabaseClient.from("profiles").select("id,full_name,display_name,country,profile_type,created_at").order("created_at",{ascending:false});
     if(error){node.innerHTML='<p class="admin-empty">Não foi possível carregar a lista de utilizadores.</p>';return;}
     const ownerSelect=document.getElementById("adminBookAuthorUserId");
     if(ownerSelect)ownerSelect.innerHTML='<option value="">Sem associação</option>'+(data||[]).map(user=>'<option value="'+user.id+'">'+escapeHTML(user.display_name||user.full_name||"Utilizador")+' · '+escapeHTML(user.country||"")+'</option>').join("");
