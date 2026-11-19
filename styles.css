@@ -529,3 +529,29 @@ body[data-theme="light"] .detail-preview{background:#fffdfa}
 .rights-policy .rights-policy-note{padding:16px 18px;border-left:3px solid var(--accent,#b99a5b);background:var(--surface,rgba(120,120,120,.04));}
 .footer-rights-link{color:inherit;text-decoration:underline;text-underline-offset:3px;font-size:.82rem;}
 @media(max-width:640px){.rights-policy{padding-top:42px;padding-bottom:48px}.rights-policy-grid{grid-template-columns:1fr}.rights-policy-grid article{padding:16px}}
+
+
+/* 84 Books — Portal de autores e análise editorial */
+.author-policy-strip,.author-contract-box{padding:18px;margin:18px 0;border:1px solid var(--line);background:var(--paper);border-radius:5px}
+.author-policy-strip strong,.author-contract-box strong{display:block;color:var(--ink);font:18px "Playfair Display",serif;margin-bottom:9px}
+.author-policy-strip p,.author-contract-box p{font-size:11px;line-height:1.7;color:var(--muted);margin:6px 0}
+.author-policy-strip small,.author-contract-note{display:block;margin-top:10px;color:var(--gold);font-size:10px;line-height:1.7}
+.author-contract-box a,.author-review-files a{display:inline-block;margin:8px 12px 0 0;color:var(--gold);font-size:11px;font-weight:700;text-decoration:underline}
+.author-check{display:flex;align-items:flex-start;gap:10px;margin:15px 0;color:var(--muted);font-size:11px;line-height:1.7}
+.author-check input{flex:0 0 auto;width:17px;height:17px;margin-top:1px;accent-color:var(--gold)}
+.author-submission-form{padding:20px;margin:22px 0 30px;border:1px solid var(--line);background:var(--paper)}
+.author-admin-note{display:block;margin-top:8px;color:var(--gold)!important}
+.author-review-card{padding:17px;margin:10px 0;border:1px solid var(--line);background:var(--paper);min-width:0}
+.author-review-card p{font-size:11px;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+.author-review-card small{font-size:9px;color:var(--muted);overflow-wrap:anywhere}
+.author-review-files{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.author-review-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.author-review-actions button{padding:9px 11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 10px "DM Sans",sans-serif;cursor:pointer}
+.author-review-actions button:hover{border-color:var(--gold);color:var(--gold)}
+.author-review-actions button:disabled{opacity:.55;cursor:wait}
+.author-review-actions .admin-delete{color:#d87970}
+@media(max-width:700px){
+  .author-submission-form{padding:15px 12px}
+  .author-review-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .author-review-actions button{min-height:42px}
+}
