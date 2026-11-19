@@ -101,7 +101,7 @@ grant select, insert, update on public.author_submissions to authenticated;
 drop policy if exists "Autores consultam as próprias submissões" on public.author_submissions;
 create policy "Autores consultam as próprias submissões"
 on public.author_submissions for select to authenticated
-using (author_id = (select auth.uid()) or public.is_84books_admin());
+using (author_id = (select auth.uid()) or private.is_84books_admin());
 
 drop policy if exists "Autores criam submissões próprias" on public.author_submissions;
 create policy "Autores criam submissões próprias"
@@ -128,8 +128,8 @@ with check (
 drop policy if exists "Administradores gerem submissões" on public.author_submissions;
 create policy "Administradores gerem submissões"
 on public.author_submissions for all to authenticated
-using (public.is_84books_admin())
-with check (public.is_84books_admin());
+using (private.is_84books_admin())
+with check (private.is_84books_admin());
 
 -- 3. Aceitação eletrónica do contrato: registo imutável para o autor.
 create table if not exists public.author_contract_acceptances (
@@ -149,7 +149,7 @@ grant select, insert on public.author_contract_acceptances to authenticated;
 drop policy if exists "Autores consultam as próprias aceitações" on public.author_contract_acceptances;
 create policy "Autores consultam as próprias aceitações"
 on public.author_contract_acceptances for select to authenticated
-using (author_id = (select auth.uid()) or public.is_84books_admin());
+using (author_id = (select auth.uid()) or private.is_84books_admin());
 
 drop policy if exists "Autores registam a própria aceitação" on public.author_contract_acceptances;
 create policy "Autores registam a própria aceitação"
@@ -191,7 +191,7 @@ grant select on public.rewarded_access_events to authenticated;
 drop policy if exists "Leitores consultam os próprios desbloqueios" on public.rewarded_access_events;
 create policy "Leitores consultam os próprios desbloqueios"
 on public.rewarded_access_events for select to authenticated
-using (user_id = (select auth.uid()) or public.is_84books_admin());
+using (user_id = (select auth.uid()) or private.is_84books_admin());
 
 -- 5. Registo financeiro de vendas pagas. Inserção/alteração apenas por backend/admin.
 create table if not exists public.book_sales (
@@ -231,12 +231,12 @@ grant select on public.book_sales to authenticated;
 drop policy if exists "Compradores consultam as próprias compras" on public.book_sales;
 create policy "Compradores consultam as próprias compras"
 on public.book_sales for select to authenticated
-using (buyer_id = (select auth.uid()) or public.is_84books_admin());
+using (buyer_id = (select auth.uid()) or private.is_84books_admin());
 
 drop policy if exists "Autores consultam vendas das próprias obras" on public.book_sales;
 create policy "Autores consultam vendas das próprias obras"
 on public.book_sales for select to authenticated
-using (author_id = (select auth.uid()) or public.is_84books_admin());
+using (author_id = (select auth.uid()) or private.is_84books_admin());
 
 -- 6. Extratos agregados de royalties por livro e período.
 create table if not exists public.author_royalty_statements (
@@ -276,7 +276,7 @@ grant select on public.author_royalty_statements to authenticated;
 drop policy if exists "Autores consultam os próprios extratos" on public.author_royalty_statements;
 create policy "Autores consultam os próprios extratos"
 on public.author_royalty_statements for select to authenticated
-using (author_id = (select auth.uid()) or public.is_84books_admin());
+using (author_id = (select auth.uid()) or private.is_84books_admin());
 
 -- 7. Pagamentos feitos aos autores; dados bancários completos não são guardados nesta tabela.
 create table if not exists public.author_payouts (
@@ -305,7 +305,7 @@ grant select on public.author_payouts to authenticated;
 drop policy if exists "Autores consultam os próprios pagamentos" on public.author_payouts;
 create policy "Autores consultam os próprios pagamentos"
 on public.author_payouts for select to authenticated
-using (author_id = (select auth.uid()) or public.is_84books_admin());
+using (author_id = (select auth.uid()) or private.is_84books_admin());
 
 -- 8. Buckets privados para manuscritos e capas submetidas por autores.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -334,15 +334,15 @@ using (
   bucket_id = '84books-manuscripts'
   and (
     (storage.foldername(name))[1] = (select auth.uid())::text
-    or public.is_84books_admin()
+    or private.is_84books_admin()
   )
 );
 
 drop policy if exists "Administradores gerem manuscritos" on storage.objects;
 create policy "Administradores gerem manuscritos"
 on storage.objects for all to authenticated
-using (bucket_id = '84books-manuscripts' and public.is_84books_admin())
-with check (bucket_id = '84books-manuscripts' and public.is_84books_admin());
+using (bucket_id = '84books-manuscripts' and private.is_84books_admin())
+with check (bucket_id = '84books-manuscripts' and private.is_84books_admin());
 
 drop policy if exists "Autores enviam as próprias capas" on storage.objects;
 create policy "Autores enviam as próprias capas"
@@ -359,15 +359,15 @@ using (
   bucket_id = '84books-author-covers'
   and (
     (storage.foldername(name))[1] = (select auth.uid())::text
-    or public.is_84books_admin()
+    or private.is_84books_admin()
   )
 );
 
 drop policy if exists "Administradores gerem capas submetidas" on storage.objects;
 create policy "Administradores gerem capas submetidas"
 on storage.objects for all to authenticated
-using (bucket_id = '84books-author-covers' and public.is_84books_admin())
-with check (bucket_id = '84books-author-covers' and public.is_84books_admin());
+using (bucket_id = '84books-author-covers' and private.is_84books_admin())
+with check (bucket_id = '84books-author-covers' and private.is_84books_admin());
 
 commit;
 
