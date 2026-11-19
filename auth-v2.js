@@ -32,6 +32,32 @@
     phone.appendChild(help);
   }
   if(country&&dialSelect){
+    // Carrega a lista internacional completa; a lista incorporada continua disponível se a rede falhar.
+    fetch("https://restcountries.com/v3.1/all?fields=name,idd")
+      .then(response=>{if(!response.ok)throw new Error("countries");return response.json();})
+      .then(rows=>{
+        const all=(rows||[]).map(item=>{
+          const name=item.name&&item.name.common;
+          const root=item.idd&&item.idd.root;
+          const suffixes=item.idd&&item.idd.suffixes;
+          const dial=root?(root+((Array.isArray(suffixes)&&suffixes.length)?suffixes[0]:"")):"";
+          return name&&dial? [name,dial]:null;
+        }).filter(Boolean);
+        const unique=[...new Map(all.map(item=>[item[0].toLocaleLowerCase("pt"),item])).values()]
+          .sort((a,b)=>a[0].localeCompare(b[0],"pt"));
+        if(!unique.length)return;
+        const previousCountry=$("authCountry").value;
+        const previousDial=dialSelect.value;
+        countries.splice(0,countries.length,...unique);
+        const list=$("authCountryOptions");list.replaceChildren();
+        unique.forEach(([name])=>{const option=document.createElement("option");option.value=name;list.appendChild(option);});
+        dialSelect.replaceChildren();
+        unique.forEach(([name,dial])=>{const option=document.createElement("option");option.value=dial;option.textContent=dial+" · "+name;dialSelect.appendChild(option);});
+        const selected=unique.find(([name])=>name.toLocaleLowerCase("pt")===previousCountry.toLocaleLowerCase("pt"));
+        if(selected)dialSelect.value=selected[1];else if([...dialSelect.options].some(o=>o.value===previousDial))dialSelect.value=previousDial;
+      })
+      .catch(()=>{});
+  }
     $("authCountry").addEventListener("input",()=>{
       const selected=countries.find(([name])=>name.toLocaleLowerCase("pt")=== $("authCountry").value.trim().toLocaleLowerCase("pt"));
       if(selected)dialSelect.value=selected[1];
