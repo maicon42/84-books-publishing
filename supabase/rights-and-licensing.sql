@@ -25,6 +25,13 @@ create or replace function public.guard_84books_publication_rights()
 returns trigger language plpgsql set search_path = ''
 as $$
 begin
+  if new.external_url <> '' and new.external_url !~ '^https://' then
+    raise exception 'As ligações externas devem usar HTTPS.';
+  end if;
+  if new.rights_status = 'rejected'
+     and (new.status = 'published' or new.file_path is not null or new.cover_path is not null) then
+    raise exception 'Esta obra tem direitos não autorizados. Não pode ser publicada nem receber ficheiros.';
+  end if;
   if new.publication_origin = 'external_reference' then
     if new.book_type <> 'breve'
        or new.file_path is not null
@@ -34,10 +41,6 @@ begin
       raise exception 'Uma referência externa só pode ser listada como Em preparação, sem capa, PDF ou excerto, e com ligação HTTPS oficial.';
     end if;
     return new;
-  end if;
-  if new.rights_status = 'rejected'
-     and (new.status = 'published' or new.file_path is not null or new.cover_path is not null) then
-    raise exception 'Esta obra tem direitos não autorizados. Não pode ser publicada nem receber ficheiros.';
   end if;
   if new.status = 'published' or new.file_path is not null or new.cover_path is not null then
     if new.publication_origin = 'licensed'
@@ -77,7 +80,7 @@ select
   'Titular dos direitos e editora da edição portuguesa — a confirmar para qualquer distribuição digital',
   'Referência bibliográfica consultada na página oficial da Penguin Livros. Não constitui licença de distribuição.',
   'https://penguinlivros.pt/loja/penguin/livro/pai-rico-pai-pobre-edicao-atualizada-25-anos-2/',
-  '9789895896882', 'Penguin', '1.ª edição atualizada 25 anos', date '2026-01-01', 336
+  '9789895896882', 'Penguin', '1.ª edição atualizada 25 anos (janeiro de 2026)', null, 336
 where not exists (
   select 1 from public.books
   where isbn = '9789895896882'
