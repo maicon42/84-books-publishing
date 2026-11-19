@@ -197,11 +197,6 @@ function renderBookDetail(id){
   const container=document.getElementById("bookDetailContent");
   if(!book||!container){navigate("biblioteca");return;}
   const tag=book.type==="gratuito"?"Gratuito":book.type==="pago"?"Pago · compra em preparação":"Em preparação";
-  const accessNote=book.type==="gratuito"
-    ?"O livro gratuito poderá ser descarregado quando existir um PDF associado à publicação."
-    :book.type==="pago"
-      ?"Este título está no catálogo. A compra e o acesso integral serão ativados numa próxima etapa."
-      :"A equipa editorial ainda está a preparar esta publicação. Volte mais tarde para conhecer as novidades.";
   const cover=book.coverUrl
     ?'<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
     :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
@@ -476,6 +471,20 @@ renderRoute();
     cover:document.getElementById("adminBookCover"),
     file:document.getElementById("adminBookFile")
   };
+  function syncAdminRightsControls(){
+    const external=adminFields.origin.value==="external_reference";
+    adminFields.cover.disabled=external;
+    adminFields.file.disabled=external;
+    adminFields.preview.disabled=external;
+    if(external){
+      adminFields.type.value="breve";
+      adminFields.cover.value="";
+      adminFields.file.value="";
+      adminFields.preview.value="";
+    }
+  }
+  adminFields.origin.addEventListener("change",syncAdminRightsControls);
+
   const profileFields = {
     fullName: document.getElementById("profileFullName"),
     displayName: document.getElementById("profileDisplayName"),
@@ -1017,6 +1026,8 @@ renderRoute();
     adminFields.edition.value="";
     adminFields.cover.disabled=false;
     adminFields.file.disabled=false;
+    adminFields.preview.disabled=false;
+    syncAdminRightsControls();
     adminFormTitle.textContent="Adicionar novo livro";
     adminSave.textContent="Publicar livro";
     adminCancel.hidden=true;
@@ -1155,8 +1166,7 @@ renderRoute();
       adminFields.isbn.value=book.isbn||"";
       adminFields.publisher.value=book.publisher||"";
       adminFields.edition.value=book.edition||"";
-      adminFields.cover.disabled=adminFields.origin.value==="external_reference";
-      adminFields.file.disabled=adminFields.origin.value==="external_reference";
+      syncAdminRightsControls();
       adminFields.description.value=book.description||"";
       adminFields.preview.value=book.preview_text||"";
       adminFields.coverPath.value=book.cover_path||"";
