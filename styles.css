@@ -697,3 +697,104 @@ body[data-theme="light"]{--paper:#fff;--surface:#fff;--surface-2:#fafafa;--heade
 @media(max-width:800px){.community-layout{grid-template-columns:1fr}.profile-avatar-editor{grid-template-columns:70px minmax(0,1fr)}.profile-avatar-preview{width:64px;height:64px}}
 
 small{font-size:13px}.brand-copy small{font-size:11px}.eyebrow{font-size:12px}
+
+/* Identidade visual 84 Books Publishing — paleta clara e acentos diversos */
+:root{
+  --gold:#2864d8;
+  --ink:#17243a;
+  --muted:#596579;
+  --paper:#ffffff;
+  --line:#e4e9f1;
+  --surface:#ffffff;
+  --surface-2:#f7f9fc;
+  --brand-blue:#2864d8;
+  --brand-teal:#0d9b8a;
+  --brand-violet:#7654c8;
+  --brand-coral:#df5c68;
+  --brand-orange:#e58a2d;
+}
+body[data-theme="light"]{
+  --gold:#2864d8;
+  --ink:#17243a;
+  --muted:#596579;
+  --paper:#ffffff;
+  --line:#e4e9f1;
+  --surface:#ffffff;
+  --surface-2:#f7f9fc;
+  --header:#ffffff;
+}
+.brand-mark{width:48px;height:48px;border:0;background:transparent;overflow:hidden;flex:0 0 48px}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.brand-copy strong{color:#17243a;letter-spacing:1.5px}
+.brand-copy small{color:#68758a;letter-spacing:2.2px}
+.footer-brand .brand-mark{width:44px;height:44px;flex-basis:44px}
+.auth-brand{gap:9px;color:#17243a;font:700 19px "DM Sans",sans-serif;letter-spacing:1px}
+.auth-brand img{width:48px;height:44px;object-fit:contain}
+.auth-brand span{display:flex;flex-direction:column;gap:3px;color:#17243a;font:700 14px "DM Sans",sans-serif;letter-spacing:1.3px}
+.auth-brand span small{font:700 9px "DM Sans",sans-serif;letter-spacing:2.8px;color:#68758a}
+.main-nav a.active{border-bottom-color:var(--brand-blue)}
+.main-nav a.active,.main-nav a:hover{color:var(--brand-blue)}
+.hero h1 em,.section-heading h2 em,.about-section h2 em,.home-intro h1 em{color:var(--brand-teal)}
+.button-primary,.auth-submit{background:var(--brand-blue);color:#fff}
+.button-primary:hover,.auth-submit:hover{background:#1f50b2}
+.eyebrow>span,.hero-note .note-icon,.text-link span,.note-icon{color:var(--brand-orange)}
+.eyebrow>span{background:var(--brand-teal)}
+.art-glow{background:#2864d824}
+.book-back{color:#dbe9ff}
+.book-mid{background:#0d9b8a;color:#fff}
+.book-front{border-color:#df5c68;color:#f2f7ff}
+.floating-seal{border-color:#7654c8;color:#fff}
+.public-promise-strip>div:nth-child(1) strong{color:var(--brand-blue)}
+.public-promise-strip>div:nth-child(2) strong{color:var(--brand-teal)}
+.public-promise-strip>div:nth-child(3) strong{color:var(--brand-violet)}
+.public-info-card{border-top:4px solid var(--brand-blue)}
+.public-info-card:nth-child(2){border-top-color:var(--brand-teal)}
+.public-info-card:nth-child(3){border-top-color:var(--brand-violet)}
+.public-card-icon{color:var(--brand-blue)}
+.public-info-card:nth-child(2) .public-card-icon{color:var(--brand-teal)}
+.public-info-card:nth-child(3) .public-card-icon{color:var(--brand-violet)}
+.public-steps article:nth-child(1)>span{color:var(--brand-blue)}
+.public-steps article:nth-child(2)>span{color:var(--brand-teal)}
+.public-steps article:nth-child(3)>span{color:var(--brand-violet)}
+.public-steps article:nth-child(4)>span{color:var(--brand-coral)}
+.public-trust-grid article:nth-child(1){border-left:3px solid var(--brand-blue)}
+.public-trust-grid article:nth-child(2){border-left:3px solid var(--brand-teal)}
+.public-trust-grid article:nth-child(3){border-left:3px solid var(--brand-coral)}
+.public-author-call{border-left:4px solid var(--brand-orange)}
+.public-final-cta{background:#17243a}
+.public-final-cta .eyebrow>span{background:var(--brand-orange)}
+.public-about-mark{border-color:var(--brand-teal)}
+.entry-card:nth-child(1) .entry-icon,.entry-card:nth-child(1)>small,.entry-card:nth-child(1) .entry-arrow{color:var(--brand-blue);border-color:#2864d866}
+.entry-card:nth-child(2) .entry-icon,.entry-card:nth-child(2)>small,.entry-card:nth-child(2) .entry-arrow{color:var(--brand-teal);border-color:#0d9b8a66}
+.entry-card:nth-child(3) .entry-icon,.entry-card:nth-child(3)>small,.entry-card:nth-child(3) .entry-arrow{color:var(--brand-violet);border-color:#7654c866}
+.entry-card:nth-child(4) .entry-icon,.entry-card:nth-child(4)>small,.entry-card:nth-child(4) .entry-arrow{color:var(--brand-coral);border-color:#df5c6866}
+.entry-card:nth-child(5) .entry-icon,.entry-card:nth-child(5)>small,.entry-card:nth-child(5) .entry-arrow{color:var(--brand-orange);border-color:#e58a2d66}
+.community-feature-grid article:nth-child(1)>span{color:var(--brand-blue)}
+.community-feature-grid article:nth-child(2)>span{color:var(--brand-teal)}
+.community-feature-grid article:nth-child(3)>span{color:var(--brand-violet)}
+.privacy-check input{accent-color:var(--brand-blue)}
+.message-bubble.sent{background:#eaf1ff;border-color:#c8d8fb}
+.profile-avatar-preview,.community-avatar{color:#fff;background-color:#2864d8}
+.admin-member-tab{border-color:#2864d866}
+.reader-panel{background:#fff}
+.reader-top{color:#fff}
+.reader-label{color:var(--brand-blue)}
+.reader-rule{background:#e4e9f1}
+.reader-footnote{border-color:#e4e9f1;color:#657187}
+.home-page,.public-section,.library-page,.about-page,.contact-page,.community-page{background-color:#fff}
+.home-page{background-image:radial-gradient(circle at 85% 12%,#2864d80b,transparent 30%)}
+.home-intro h1 em{color:var(--brand-teal)}
+/* Legibilidade: ampliar os detalhes sem tornar a página pesada */
+.main-nav{font-size:14px}
+.hero-content>p,.public-section p,.public-info-card p,.public-steps article p,.public-trust-grid p{font-size:15px;line-height:1.75}
+.eyebrow,.hero-note,.hero-bottom,.public-info-card small,.public-small-note,.privacy-check,.profile-message,.auth-intro,.auth-privacy,.admin-book-summary span,.admin-book-summary small,.community-profile-info>span,.community-profile-info>small{font-size:14px}
+.auth-field{font-size:14px}
+.auth-intro{line-height:1.65}
+.book-author,.book-category,.status-tag,.admin-book-status{font-size:14px}
+.site-footer p,.site-footer span{font-size:13px}
+@media(max-width:650px){
+  .brand-mark{width:43px;height:43px;flex-basis:43px}
+  .brand-copy strong{font-size:13px}
+  .brand-copy small{font-size:10px}
+  .auth-brand img{width:42px;height:40px}
+}
