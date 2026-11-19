@@ -51,7 +51,7 @@ function renderHomeBookCard(book){
 function renderHome(){
   const latestContainer=document.getElementById("homeLatestBooks");
   if(!latestContainer)return;
-  const latest=books.filter(book=>book.isRemote&&book.status==="published")
+  const latest=books.filter(book=>book.isRemote&&book.status==="published"&&book.type!=="breve")
     .sort((a,b)=>new Date(b.createdAt||0).getTime()-new Date(a.createdAt||0).getTime())
     .slice(0,4);
   latestContainer.innerHTML=latest.length
@@ -206,6 +206,13 @@ function renderBookDetail(id){
     ?'<img class="book-cover-image" src="'+escapeHTML(book.coverUrl)+'" alt="Capa de '+escapeHTML(book.title)+'">'
     :'<div class="cover-art '+escapeHTML(book.tone||"tone-one")+'"><small>84 BOOKS PUBLISHING</small><strong>'+escapeHTML(book.title)+'</strong><span class="cover-number">84</span><small>CONHECIMENTO SEM FRONTEIRAS</small></div>';
   const description=book.description||book.excerpt||"Uma publicação da 84 Books Publishing.";
+  const accessNote=book.publicationOrigin==="external_reference"
+    ?"Esta ficha é apenas informativa. A 84 Books Publishing não disponibiliza o PDF, a capa oficial nem excertos desta obra. Consulte a editora para obter uma edição autorizada."
+    :book.type==="gratuito"
+      ?"O livro gratuito poderá ser descarregado quando existir um PDF associado à publicação."
+      :book.type==="pago"
+        ?"Este título está no catálogo. A compra e o acesso integral serão ativados numa próxima etapa."
+        :"A equipa editorial ainda está a preparar esta publicação. Volte mais tarde para conhecer as novidades.";
   const canDownload=book.type==="gratuito"&&!!book.filePath&&!!current84User&&current84Role==="admin";
   const canRead=!!book.filePath&&(book.type==="gratuito"||current84Role==="admin");
   container.innerHTML=
@@ -214,11 +221,17 @@ function renderBookDetail(id){
     '<span class="detail-category">'+escapeHTML(book.category||"Geral")+'</span><span class="detail-status">'+escapeHTML(tag)+'</span>'+
     '<h1>'+escapeHTML(book.title)+'</h1><p class="detail-author">Por '+escapeHTML(book.author)+'</p>'+
     '<p class="detail-description">'+escapeHTML(description)+'</p>'+
-    '<div class="detail-meta"><span>EDITORA</span><strong>84 Books Publishing</strong><span>ACESSO</span><strong>'+escapeHTML(bookPriceLabel(book))+'</strong></div>'+
+    '<div class="detail-meta"><span>EDITORA</span><strong>'+escapeHTML(book.publisher||"84 Books Publishing")+'</strong><span>ACESSO</span><strong>'+escapeHTML(bookPriceLabel(book))+'</strong>'+
+      (book.isbn?'<span>ISBN</span><strong>'+escapeHTML(book.isbn)+'</strong>':"")+
+      (book.edition?'<span>EDIÇÃO</span><strong>'+escapeHTML(book.edition)+'</strong>':"")+
+      (book.pageCount?'<span>PÁGINAS</span><strong>'+escapeHTML(String(book.pageCount))+'</strong>':"")+
+    '</div>'+
     '<div class="detail-actions">'+(book.type==="breve"?'<span class="detail-coming">Publicação em preparação</span>':'<button class="button button-primary" id="detailPreviewToggle" type="button">Ler prévia <span>→</span></button>')+
     (canRead?'<button class="button button-primary" id="detailReadBook" type="button">Ler livro completo <span>→</span></button>':"")+
     (canDownload?'<button class="detail-favorite" id="detailDownload" type="button">↓ Descarregar PDF</button>':"")+
-    '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button></div>'+
+    '<button class="detail-favorite" id="detailFavorite" type="button">'+(favorites.has(bookKey(book.id))?"♥ Guardado nos favoritos":"♡ Adicionar aos favoritos")+'</button>'+
+    (book.externalUrl?'<a class="button button-light" href="'+escapeHTML(book.externalUrl)+'" target="_blank" rel="noopener noreferrer">Consultar edição oficial ↗</a>':"")+
+    '</div>'+
     '<p class="detail-note">'+escapeHTML(accessNote)+'</p></div></div>'+
     '<section class="pdf-reader" id="bookPdfReader" hidden aria-label="Leitor de livro em PDF">'+
       '<div class="pdf-reader-heading"><div><span class="detail-category">LEITOR DIGITAL 84 BOOKS</span><h2 id="pdfReaderTitle">Leitura do livro</h2><p id="pdfReaderStatus" role="status" aria-live="polite">O leitor está pronto para abrir o PDF.</p></div><button type="button" class="pdf-reader-close" id="pdfReaderClose">Fechar leitor ×</button></div>'+
@@ -450,6 +463,14 @@ renderRoute();
     type:document.getElementById("adminBookType"),
     price:document.getElementById("adminBookPrice"),
     status:document.getElementById("adminBookStatus"),
+    origin:document.getElementById("adminBookOrigin"),
+    rightsStatus:document.getElementById("adminBookRightsStatus"),
+    rightsHolder:document.getElementById("adminBookRightsHolder"),
+    rightsEvidence:document.getElementById("adminBookRightsEvidence"),
+    externalUrl:document.getElementById("adminBookExternalUrl"),
+    isbn:document.getElementById("adminBookIsbn"),
+    publisher:document.getElementById("adminBookPublisher"),
+    edition:document.getElementById("adminBookEdition"),
     description:document.getElementById("adminBookDescription"),
     preview:document.getElementById("adminBookPreview"),
     cover:document.getElementById("adminBookCover"),
@@ -705,7 +726,7 @@ renderRoute();
 
   async function loadPublicBooks(){
     const {data,error}=await supabaseClient.from("books")
-      .select("id,title,author,category,description,preview_text,book_type,price,status,cover_path,file_path,created_at")
+      .select("id,title,author,category,description,preview_text,book_type,price,status,cover_path,file_path,created_at,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count")
       .eq("status","published")
       .order("created_at",{ascending:false});
     if(error){
@@ -735,7 +756,17 @@ renderRoute();
         coverUrl:coverResult&&coverResult.data?coverResult.data.publicUrl:"",
         filePath:row.file_path||"",
         tone:"tone-one",
-        excerpt:row.preview_text||row.description||""
+        excerpt:row.preview_text||row.description||"",
+        publicationOrigin:row.publication_origin||"original",
+        rightsStatus:row.rights_status||"pending",
+        rightsHolder:row.rights_holder||"",
+        rightsEvidence:row.rights_evidence||"",
+        externalUrl:row.external_url||"",
+        isbn:row.isbn||"",
+        publisher:row.publisher||"",
+        edition:row.edition||"",
+        publicationDate:row.publication_date||"",
+        pageCount:row.page_count||null
       };
     });
     catalogLoadError=false;
@@ -975,7 +1006,17 @@ renderRoute();
     adminFields.filePath.value="";
     adminFields.price.value="0";
     adminFields.type.value="gratuito";
-    adminFields.status.value="published";
+    adminFields.status.value="draft";
+    adminFields.origin.value="original";
+    adminFields.rightsStatus.value="pending";
+    adminFields.rightsHolder.value="";
+    adminFields.rightsEvidence.value="";
+    adminFields.externalUrl.value="";
+    adminFields.isbn.value="";
+    adminFields.publisher.value="";
+    adminFields.edition.value="";
+    adminFields.cover.disabled=false;
+    adminFields.file.disabled=false;
     adminFormTitle.textContent="Adicionar novo livro";
     adminSave.textContent="Publicar livro";
     adminCancel.hidden=true;
@@ -986,7 +1027,7 @@ renderRoute();
     if(current84Role!=="admin"||!currentUser)return;
     adminList.innerHTML='<p class="admin-empty">A carregar as publicações...</p>';
     const {data,error}=await supabaseClient.from("books")
-      .select("id,title,author,category,book_type,price,status,cover_path,file_path,description,preview_text")
+      .select("id,title,author,category,book_type,price,status,cover_path,file_path,description,preview_text,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count")
       .order("created_at",{ascending:false});
     if(error){
       adminList.innerHTML='<p class="admin-empty">Não foi possível carregar os livros. Confirme se executou supabase/admin-books.sql.</p>';
@@ -1000,7 +1041,9 @@ renderRoute();
     adminList.innerHTML=adminBookCache.map(book=>{
       const state=book.status==="published"?"PUBLICADO":"RASCUNHO";
       const type=book.book_type==="gratuito"?"Gratuito":book.book_type==="pago"?"Pago":"Em preparação";
-      return '<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(book.title)+'</strong><span>'+escapeHTML(book.author)+' · '+escapeHTML(book.category||"Geral")+' · '+type+'</span><span class="admin-book-status">'+state+'</span></div><div class="admin-book-actions"><button type="button" data-admin-edit="'+escapeHTML(book.id)+'">Editar</button><button type="button" class="admin-delete" data-admin-delete="'+escapeHTML(book.id)+'">Eliminar</button></div></article>';
+      const origin=book.publication_origin==="external_reference"?"Referência externa":book.publication_origin==="licensed"?"Licenciado":book.publication_origin==="public_domain"?"Domínio público":"Original";
+      const rights=book.rights_status==="verified"?"Direitos verificados":book.rights_status==="not_required"?"Sem direitos patrimoniais pendentes":book.rights_status==="rejected"?"Direitos recusados":"Direitos por verificar";
+      return '<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(book.title)+'</strong><span>'+escapeHTML(book.author)+' · '+escapeHTML(book.category||"Geral")+' · '+type+' · '+origin+'</span><span class="admin-book-status">'+state+' · '+rights+'</span></div><div class="admin-book-actions"><button type="button" data-admin-edit="'+escapeHTML(book.id)+'">Editar</button><button type="button" class="admin-delete" data-admin-delete="'+escapeHTML(book.id)+'">Eliminar</button></div></article>';
     }).join("");
   }
 
@@ -1018,6 +1061,18 @@ renderRoute();
     if(current84Role!=="admin"||!currentUser){showAdminMessage("Apenas o administrador pode publicar livros.",true);return;}
     const coverFile=adminFields.cover.files[0]||null;
     const pdfFile=adminFields.file.files[0]||null;
+    const origin=adminFields.origin.value;
+    const rightsStatus=adminFields.rightsStatus.value;
+    const evidence=adminFields.rightsEvidence.value.trim();
+    if(origin==="external_reference"&&(adminFields.type.value!=="breve"||coverFile||pdfFile||adminFields.preview.value.trim()||!/^https:\/\//i.test(adminFields.externalUrl.value.trim()))){
+      showAdminMessage("Uma referência externa deve ficar como Em preparação, sem capa, PDF ou excerto, e ter uma ligação HTTPS oficial.",true);return;
+    }
+    if(origin!=="external_reference"&&(adminFields.status.value==="published"||coverFile||pdfFile)){
+      const validRights=(origin==="public_domain"&&rightsStatus==="not_required")||(origin!=="public_domain"&&rightsStatus==="verified");
+      if(!validRights||!evidence){
+        showAdminMessage("Antes de publicar ou carregar ficheiros, confirme os direitos e registe uma referência documental. Para domínio público, documente a verificação do prazo de proteção.",true);return;
+      }
+    }
     if(coverFile&&(!/^image\/(jpeg|png|webp)$/.test(coverFile.type)||coverFile.size>8*1024*1024)){
       showAdminMessage("A capa deve ser JPG, PNG ou WEBP e ter no máximo 8 MB.",true);return;
     }
@@ -1042,6 +1097,14 @@ renderRoute();
         book_type:adminFields.type.value,
         price:adminFields.type.value==="gratuito"?0:Number(adminFields.price.value||0),
         status:adminFields.status.value,
+        publication_origin:origin,
+        rights_status:rightsStatus,
+        rights_holder:adminFields.rightsHolder.value.trim(),
+        rights_evidence:evidence,
+        external_url:adminFields.externalUrl.value.trim(),
+        isbn:adminFields.isbn.value.trim(),
+        publisher:adminFields.publisher.value.trim(),
+        edition:adminFields.edition.value.trim(),
         cover_path:newCover||null,
         file_path:newFile||null,
         updated_at:new Date().toISOString()
@@ -1062,6 +1125,8 @@ renderRoute();
       await renderAdminBooks();
       await loadPublicBooks();
     }catch(error){
+      if(newCover&&newCover!==oldCover)await supabaseClient.storage.from("84books-covers").remove([newCover]).catch(()=>{});
+      if(newFile&&newFile!==oldFile)await supabaseClient.storage.from("84books-files").remove([newFile]).catch(()=>{});
       showAdminMessage(error.message||"Não foi possível guardar o livro.",true);
     }finally{
       adminSave.disabled=false;
@@ -1082,6 +1147,16 @@ renderRoute();
       adminFields.type.value=book.book_type||"gratuito";
       adminFields.price.value=book.price||0;
       adminFields.status.value=book.status||"published";
+      adminFields.origin.value=book.publication_origin||"original";
+      adminFields.rightsStatus.value=book.rights_status||"pending";
+      adminFields.rightsHolder.value=book.rights_holder||"";
+      adminFields.rightsEvidence.value=book.rights_evidence||"";
+      adminFields.externalUrl.value=book.external_url||"";
+      adminFields.isbn.value=book.isbn||"";
+      adminFields.publisher.value=book.publisher||"";
+      adminFields.edition.value=book.edition||"";
+      adminFields.cover.disabled=adminFields.origin.value==="external_reference";
+      adminFields.file.disabled=adminFields.origin.value==="external_reference";
       adminFields.description.value=book.description||"";
       adminFields.preview.value=book.preview_text||"";
       adminFields.coverPath.value=book.cover_path||"";
