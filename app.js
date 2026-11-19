@@ -1963,7 +1963,10 @@ renderRoute();
       Promise.resolve().then(async()=>{
         await loadMemberProfile(session.user);
         authReady=true;
-        if(event==="SIGNED_IN"){
+        if(event==="PASSWORD_RECOVERY"){
+          // A sessão de recuperação não deve abrir a área da conta antes da nova palavra-passe.
+          memberArea.hidden=true;
+        }else if(event==="SIGNED_IN"){
           hideOverlay();
           memberArea.hidden=true;
           navigate("inicio");
