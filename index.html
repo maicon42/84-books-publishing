@@ -221,6 +221,18 @@
       <div><div class="eyebrow dark"><span></span> QUEM SOMOS</div><h2>Mais do que livros.<br><em>Uma ponte para o saber.</em></h2></div>
       <p>A 84 Books Publishing é uma editora digital dedicada a aproximar leitores de ideias, histórias e conhecimento. Queremos tornar a leitura acessível, valorizar autores e levar boas publicações a leitores de todo o mundo.</p>
     </section>
+    <section class="rights-policy section-wrap" id="direitos-publicacoes">
+      <div class="eyebrow dark"><span></span> TRANSPARÊNCIA EDITORIAL</div>
+      <h2>Direitos de autor e publicações</h2>
+      <p>A 84 Books Publishing procura respeitar os direitos dos autores, tradutores, ilustradores, fotógrafos e editoras. A presença de uma obra no catálogo não significa que a plataforma seja titular dos direitos de reprodução ou distribuição.</p>
+      <div class="rights-policy-grid">
+        <article><strong>Obras originais</strong><p>Publicamos obras dos próprios autores ou de parceiros que confirmem por escrito possuir os direitos necessários.</p></article>
+        <article><strong>Obras licenciadas</strong><p>Livros de terceiros só recebem capa, excerto, leitura ou download quando existir autorização escrita que cubra o formato digital, o território e o modelo de distribuição.</p></article>
+        <article><strong>Domínio público</strong><p>A equipa verifica a duração dos direitos aplicável à obra e à edição concreta. Uma tradução, introdução, capa ou digitalização recente pode continuar protegida.</p></article>
+        <article><strong>Referências externas</strong><p>Podemos identificar livros e encaminhar leitores para páginas oficiais, sem alojar PDFs, capas protegidas ou excertos não autorizados.</p></article>
+      </div>
+      <p class="rights-policy-note">Se é titular de direitos e acredita que algum conteúdo viola os seus direitos, contacte a equipa através da página Contacto, indicando a obra, a ligação da página e a prova da titularidade. A publicação será analisada e, se necessário, suspensa enquanto a situação é verificada.</p>
+    </section>
 
   
   </section>
@@ -327,13 +339,41 @@
               <label class="profile-field">Preço (Kz)<input id="adminBookPrice" type="number" min="0" step="1" value="0"></label>
               <label class="profile-field">Estado<select id="adminBookStatus"><option value="published">Publicado</option><option value="draft">Rascunho</option></select></label>
             </div>
+            <div class="profile-grid">
+              <label class="profile-field">Origem da publicação
+                <select id="adminBookOrigin">
+                  <option value="original">Obra original / autor parceiro</option>
+                  <option value="licensed">Obra de terceiros com licença</option>
+                  <option value="public_domain">Obra de domínio público</option>
+                  <option value="external_reference">Referência externa (sem conteúdo)</option>
+                </select>
+              </label>
+              <label class="profile-field">Situação dos direitos
+                <select id="adminBookRightsStatus">
+                  <option value="pending">Por verificar</option>
+                  <option value="verified">Verificados / autorizados</option>
+                  <option value="not_required">Domínio público verificado</option>
+                  <option value="rejected">Não autorizado / recusado</option>
+                </select>
+              </label>
+              <label class="profile-field">Titular dos direitos<input id="adminBookRightsHolder" type="text" maxlength="180" placeholder="Autor, editora ou titular autorizado"></label>
+              <label class="profile-field">ISBN<input id="adminBookIsbn" type="text" maxlength="32" placeholder="ISBN, se existir"></label>
+              <label class="profile-field">Editora original<input id="adminBookPublisher" type="text" maxlength="120"></label>
+              <label class="profile-field">Edição<input id="adminBookEdition" type="text" maxlength="120"></label>
+            </div>
+            <label class="profile-field">Referência documental dos direitos
+              <input id="adminBookRightsEvidence" type="text" maxlength="500" placeholder="Ex.: contrato assinado, licença e data, ou fonte que comprova domínio público">
+            </label>
+            <label class="profile-field">Ligação externa oficial (HTTPS)
+              <input id="adminBookExternalUrl" type="url" maxlength="500" placeholder="https://...">
+            </label>
             <label class="profile-field">Descrição do livro<textarea id="adminBookDescription" rows="3" maxlength="1200" placeholder="Apresente o livro aos leitores..."></textarea></label>
             <label class="profile-field">Texto de pré-visualização<textarea id="adminBookPreview" rows="5" maxlength="12000" placeholder="Escreva uma amostra que os leitores poderão consultar..."></textarea></label>
             <div class="profile-grid">
               <label class="profile-field">Capa do livro (imagem)<input id="adminBookCover" type="file" accept="image/png,image/jpeg,image/webp"></label>
               <label class="profile-field">Ficheiro do livro (PDF)<input id="adminBookFile" type="file" accept="application/pdf"></label>
             </div>
-            <p class="admin-upload-note">A capa será pública. Os PDFs gratuitos poderão ser descarregados por leitores autenticados; PDFs pagos ficam protegidos até existir integração de compras.</p>
+            <p class="admin-upload-note">SEGURANÇA EDITORIAL: só carregue capas e PDFs quando tiver autorização para distribuir também esses materiais. Obras licenciadas exigem prova escrita; obras de domínio público exigem verificação documentada do prazo de proteção. Referências externas ficam apenas com título, autor, descrição própria e ligação HTTPS oficial — sem capa, PDF ou excertos.</p>
             <div class="admin-form-actions"><p id="adminBookMessage" class="profile-message" role="status" aria-live="polite"></p><button class="auth-submit profile-save" id="adminBookSave" type="submit">Publicar livro</button><button class="member-secondary" id="adminBookCancel" type="button" hidden>Cancelar edição</button></div>
           </form>
           <div class="admin-list-heading"><h4>Livros da editora</h4><button class="member-secondary" id="adminRefreshBooks" type="button">Atualizar lista</button></div>
@@ -347,6 +387,7 @@
     <a class="brand footer-brand" href="#/inicio"><span class="brand-mark">84</span><span class="brand-copy"><strong>BOOKS</strong><small>PUBLISHING</small></span></a>
     <p>Conhecimento sem fronteiras.</p>
     <span>© <span id="year"></span> 84 Books Publishing. Todos os direitos reservados.</span>
+    <a class="footer-rights-link" href="#/sobre">Direitos de autor e publicações</a>
   </footer>
 
   <div class="reader-overlay" id="readerOverlay" aria-hidden="true">
