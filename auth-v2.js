@@ -225,13 +225,82 @@
     finally{submit.disabled=false;submit.textContent="Iniciar sessão";}
   },true);
   const forgot=$("forgotPassword");
+  const recoveryCooldownKey="84books_password_recovery_cooldown";
+  let recoveryTimer=null;
+  function startRecoveryCooldown(until){
+    if(!forgot)return;
+    if(recoveryTimer)clearInterval(recoveryTimer);
+    const tick=()=>{
+      const remaining=Math.max(0,Math.ceil((until-Date.now())/1000));
+      if(remaining>0){forgot.disabled=true;forgot.textContent="Aguarde "+remaining+"s para pedir novamente";forgot.setAttribute("aria-disabled","true");}
+      else{clearInterval(recoveryTimer);recoveryTimer=null;forgot.disabled=false;forgot.textContent="Esqueci a minha palavra-passe";forgot.removeAttribute("aria-disabled");try{localStorage.removeItem(recoveryCooldownKey);}catch(_){}}
+    };
+    tick();
+    if(until>Date.now())recoveryTimer=setInterval(tick,250);
+  }
+  try{const savedUntil=Number(localStorage.getItem(recoveryCooldownKey)||0);if(savedUntil>Date.now())startRecoveryCooldown(savedUntil);}catch(_){}
   if(forgot)forgot.addEventListener("click",async event=>{
     event.preventDefault();event.stopImmediatePropagation();
+    if(forgot.disabled)return;
     const value=identifierInput.value.trim();
     if(!value.includes("@")){setError(identifierInput,"Para recuperar a palavra-passe, introduza o e-mail associado à conta.");identifierInput.focus();return;}
-    try{const {error}=await client.auth.resetPasswordForEmail(value,{redirectTo:window.location.href.split("#")[0]});if(error)throw error;setMessage("Se o endereço estiver registado, receberá as instruções de recuperação.");}
-    catch(error){setMessage(error.message||"Não foi possível enviar o pedido.",true);}
+    forgot.disabled=true;forgot.textContent="A enviar pedido...";clearAllErrors();
+    try{
+      const {error}=await client.auth.resetPasswordForEmail(value,{redirectTo:window.location.href.split("#")[0]});
+      if(error)throw error;
+      const until=Date.now()+60000;
+      try{localStorage.setItem(recoveryCooldownKey,String(until));}catch(_){}
+      startRecoveryCooldown(until);
+      setMessage("Se o endereço estiver registado, receberá um e-mail com o link para criar uma nova palavra-passe. Pode solicitar outro link quando terminar a contagem.");
+    }catch(error){forgot.disabled=false;forgot.textContent="Esqueci a minha palavra-passe";setMessage(error.message||"Não foi possível enviar o pedido. Aguarde um pouco e tente novamente.",true);}
   },true);
+
+  let recoveryPanel=null;
+  function showPasswordRecovery(){
+    if(!overlay)return;
+    const panel=document.querySelector(".auth-panel");
+    if(!panel)return;
+    if(!recoveryPanel){
+      recoveryPanel=document.createElement("section");recoveryPanel.id="passwordRecoveryPanel";recoveryPanel.className="password-recovery-panel";
+      const heading=document.createElement("h2");heading.textContent="Criar nova palavra-passe";
+      const intro=document.createElement("p");intro.textContent="Escolha uma nova palavra-passe para voltar a aceder à sua biblioteca.";
+      const formRecovery=document.createElement("form");formRecovery.id="passwordRecoveryForm";formRecovery.noValidate=true;
+      const makeField=(id,label,placeholder)=>{
+        const wrap=document.createElement("label");wrap.className="auth-field";wrap.textContent=label;
+        const input=document.createElement("input");input.id=id;input.type="password";input.autocomplete="new-password";input.minLength=8;input.required=true;input.placeholder=placeholder;wrap.appendChild(input);formRecovery.appendChild(wrap);return input;
+      };
+      const newPass=makeField("recoveryNewPassword","Nova palavra-passe","Pelo menos 8 caracteres");
+      const confirmPass=makeField("recoveryConfirmPassword","Confirmar nova palavra-passe","Digite novamente a nova palavra-passe");
+      const message=document.createElement("p");message.id="recoveryMessage";message.className="auth-message";message.setAttribute("role","status");message.setAttribute("aria-live","polite");
+      const submit=document.createElement("button");submit.type="submit";submit.className="auth-submit";submit.textContent="Guardar nova palavra-passe";
+      formRecovery.append(submit,message);
+      formRecovery.addEventListener("submit",async event=>{
+        event.preventDefault();message.textContent="";message.classList.remove("error");
+        if(newPass.value.length<8){message.textContent="A palavra-passe deve ter pelo menos 8 caracteres.";message.classList.add("error");newPass.focus();return;}
+        if(newPass.value!==confirmPass.value){message.textContent="As palavras-passe não coincidem. Confirme novamente.";message.classList.add("error");confirmPass.focus();return;}
+        submit.disabled=true;submit.textContent="A guardar...";
+        try{
+          const {error}=await client.auth.updateUser({password:newPass.value});
+          if(error)throw error;
+          message.textContent="Palavra-passe alterada com sucesso. Agora entre com a sua nova palavra-passe.";
+          await client.auth.signOut();
+          window.history.replaceState({},document.title,window.location.pathname+window.location.search);
+          setTimeout(()=>window.location.reload(),900);
+        }catch(error){message.textContent=error.message||"Não foi possível alterar a palavra-passe. Solicite um novo link e tente novamente.";message.classList.add("error");submit.disabled=false;submit.textContent="Guardar nova palavra-passe";}
+      });
+      recoveryPanel.append(heading,intro,formRecovery);
+      panel.appendChild(recoveryPanel);
+    }
+    const title=$("authTitle"),intro=panel.querySelector(".auth-intro"),tabs=panel.querySelector(".auth-tabs"),form=$("authForm");
+    if(title)title.hidden=true;if(intro)intro.hidden=true;if(tabs)tabs.hidden=true;if(form)form.hidden=true;
+    if(forgot)forgot.hidden=true;
+    const resend=$("resendConfirmation");if(resend)resend.hidden=true;
+    const msg=$("authMessage");if(msg)msg.hidden=true;
+    recoveryPanel.hidden=false;overlay.classList.add("open");overlay.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+  }
+  client.auth.onAuthStateChange((event)=>{
+    if(event==="PASSWORD_RECOVERY")showPasswordRecovery();
+  });
   function closeByBack(){
     if(!overlay?.classList.contains("open"))return;
     overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true");document.body.style.overflow="";
