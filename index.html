@@ -440,7 +440,7 @@
         </section>
         <section class="member-panel admin-panel" data-member-panel="admin" hidden>
           <div class="member-panel-heading"><span>CONTROLO DA EDITORA</span><h3>Painel de administração</h3><p>Gira a identidade visual, consulte os membros e administre as publicações.</p></div>
-          <section class="admin-branding-box"><h4>Identidade visual da editora</h4><p>O administrador pode atualizar o logotipo oficial. A alteração será apresentada no cabeçalho e no rodapé do site.</p><form id="adminBrandForm"><label class="profile-field">Novo logotipo (PNG, JPG, WEBP ou SVG)<input id="adminBrandLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label><button class="auth-submit" id="adminBrandSave" type="submit">Atualizar logotipo</button><p id="adminBrandMessage" class="profile-message" role="status"></p></form></section>
+          <section class="admin-branding-box"><h4>Identidade visual da editora</h4><p>O administrador pode atualizar o logotipo oficial. A alteração será apresentada no cabeçalho e no rodapé do site.</p><form id="adminBrandForm"><label class="profile-field">Novo logotipo (PNG, JPG ou WEBP)<input id="adminBrandLogo" type="file" accept="image/png,image/jpeg,image/webp"></label><button class="auth-submit" id="adminBrandSave" type="submit">Atualizar logotipo</button><p id="adminBrandMessage" class="profile-message" role="status"></p></form></section>
           <section class="admin-users-box"><div class="admin-list-heading"><h4>Utilizadores registados</h4><button class="member-secondary" id="adminRefreshUsers" type="button">Atualizar utilizadores</button></div><div id="adminUsersList" class="admin-books-list"><p class="admin-empty">A carregar utilizadores...</p></div></section>
           <div class="admin-list-heading"><h4>Submissões de autores</h4><button class="member-secondary" id="adminRefreshSubmissions" type="button">Atualizar submissões</button></div>
           <div id="adminAuthorSubmissionsList" class="admin-books-list"><p class="admin-empty">A carregar submissões...</p></div>
@@ -451,7 +451,7 @@
             <div class="admin-form-heading"><strong id="adminFormTitle">Adicionar novo livro</strong><span>Os campos com * são obrigatórios.</span></div>
             <div class="profile-grid">
               <label class="profile-field">Título do livro *<input id="adminBookTitle" type="text" required maxlength="180"></label>
-              <label class="profile-field">Autor / autora *<input id="adminBookAuthor" type="text" required maxlength="140"></label>
+              <label class="profile-field">Autor / autora *<input id="adminBookAuthor" type="text" required maxlength="140"></label><label class="profile-field">Associar ao perfil do autor (opcional)<select id="adminBookAuthorUserId"><option value="">Sem associação</option></select></label>
               <label class="profile-field">Categoria<input id="adminBookCategory" type="text" maxlength="80" placeholder="Ex.: Educação, Literatura..."></label>
               <label class="profile-field">Tipo de acesso<select id="adminBookType"><option value="gratuito">Gratuito</option><option value="pago">Pago</option><option value="breve">Em preparação</option></select></label>
               <label class="profile-field">Preço (Kz)<input id="adminBookPrice" type="number" min="0" step="1" value="0"></label>
@@ -543,6 +543,6 @@
     </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261120-social-privacy-2"></script>
+  <script src="app.js?v=20261120-social-privacy-3"></script>
 </body>
 </html>
