@@ -361,6 +361,7 @@ function renderRoute(){
     document.querySelectorAll("[data-member-tab]").forEach(item=>item.classList.toggle("active",item.dataset.memberTab===tab));
     document.querySelectorAll("[data-member-panel]").forEach(panel=>panel.hidden=panel.dataset.memberPanel!==tab);
     if(tab==="admin")window.dispatchEvent(new Event("84books:admin-open"));
+    if(tab==="community")window.dispatchEvent(new Event("84books:community-open"));
     if(tab==="author")window.dispatchEvent(new Event("84books:author-open"));
   }
 
@@ -437,7 +438,7 @@ renderRoute();
   const closeButton = document.getElementById("authClose");
   const form = document.getElementById("authForm");
   const title = document.getElementById("authTitle");
-  const fullNameWrap = document.getElementById("fullNameWrap");
+  const signupFields = document.getElementById("signupFields");
   const fullNameInput = document.getElementById("authFullName");
   const emailInput = document.getElementById("authEmail");
   const passwordInput = document.getElementById("authPassword");
@@ -529,7 +530,18 @@ renderRoute();
     gender: document.getElementById("profileGender"),
     birthDate: document.getElementById("profileBirthDate"),
     type: document.getElementById("profileType"),
-    bio: document.getElementById("profileBio")
+    bio: document.getElementById("profileBio"),
+    avatarFile: document.getElementById("profileAvatarFile"),
+    avatarPreview: document.getElementById("profileAvatarPreview"),
+    avatarPublic: document.getElementById("profileAvatarPublic"),
+    isPublic: document.getElementById("profileIsPublic"),
+    showFullName: document.getElementById("profileShowFullName"),
+    showCountry: document.getElementById("profileShowCountry"),
+    showPhone: document.getElementById("profileShowPhone"),
+    showBirthDate: document.getElementById("profileShowBirthDate"),
+    showGender: document.getElementById("profileShowGender"),
+    showFollowers: document.getElementById("profileShowFollowers"),
+    showFollowing: document.getElementById("profileShowFollowing")
   };
 
   let currentUser = null;
@@ -720,8 +732,8 @@ renderRoute();
   function setMode(nextMode){
     mode = nextMode;
     document.querySelectorAll("[data-auth-mode]").forEach(tab => tab.classList.toggle("active",tab.dataset.authMode===mode));
-    fullNameWrap.hidden = mode !== "signup";
-    fullNameInput.required = mode === "signup";
+    signupFields.hidden = mode !== "signup";
+    signupFields.querySelectorAll("input,select").forEach(field=>{field.required=mode==="signup"&&field.id!=="authProfileType";});
     passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
     title.textContent = mode === "signup" ? "Crie a sua conta gratuita." : "A sua biblioteca começa aqui.";
     submitButton.textContent = mode === "signup" ? "Criar a minha conta" : "Entrar na minha conta";
@@ -770,10 +782,74 @@ renderRoute();
     setAdminVisibility();
   }
 
+  async function renderOwnAvatar(path){
+    if(!profileFields.avatarPreview)return;
+    if(!path){profileFields.avatarPreview.textContent="84";profileFields.avatarPreview.style.backgroundImage="";return;}
+    const {data,error}=await supabaseClient.storage.from("84books-avatars").createSignedUrl(path,3600);
+    if(error||!data){profileFields.avatarPreview.textContent="84";return;}
+    profileFields.avatarPreview.innerHTML="";
+    profileFields.avatarPreview.style.backgroundImage="url('"+data.signedUrl.replace(/'/g,"%27")+"')";
+    profileFields.avatarPreview.style.backgroundSize="cover";
+    profileFields.avatarPreview.style.backgroundPosition="center";
+  }
+
+  async function loadBranding(){
+    const {data,error}=await supabaseClient.from("site_settings").select("logo_path").eq("setting_key","branding").maybeSingle();
+    if(error||!data||!data.logo_path)return;
+    const url=supabaseClient.storage.from("84books-brand").getPublicUrl(data.logo_path).data.publicUrl;
+    document.querySelectorAll(".brand-mark").forEach(node=>{node.innerHTML='<img src="'+url+'" alt="Logotipo 84 Books Publishing">';node.classList.add("has-logo");});
+  }
+
+  async function loadAdminUsers(){
+    const node=document.getElementById("adminUsersList");
+    if(!node||current84Role!=="admin"||!currentUser)return;
+    const {data,error}=await supabaseClient.from("admin_user_directory").select("id,full_name,display_name,country,profile_type,created_at").order("created_at",{ascending:false});
+    if(error){node.innerHTML='<p class="admin-empty">Não foi possível carregar a lista de utilizadores.</p>';return;}
+    node.innerHTML=(data||[]).map(user=>'<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(user.display_name||user.full_name||"Utilizador")+'</strong><span>'+escapeHTML(user.full_name||"Nome civil não indicado")+' · '+escapeHTML(user.country||"País não indicado")+' · '+escapeHTML(user.profile_type||"reader")+'</span><small>Conta criada: '+new Date(user.created_at).toLocaleDateString("pt-AO")+'</small></div></article>').join("")||'<p class="admin-empty">Ainda não há utilizadores registados.</p>';
+  }
+
+  async function loadCommunityProfiles(){
+    const node=document.getElementById("communityProfiles");
+    const select=document.getElementById("messageRecipient");
+    if(!node||!currentUser)return;
+    node.innerHTML='<p class="admin-empty">A carregar perfis públicos...</p>';
+    const [profilesResult,followingResult]=await Promise.all([
+      supabaseClient.from("public_profiles").select("id,display_name,full_name,country,profile_type,bio,avatar_path,follower_count,following_count,show_followers,show_following").order("created_at",{ascending:false}),
+      supabaseClient.from("follows").select("followed_id").eq("follower_id",currentUser.id)
+    ]);
+    if(profilesResult.error){node.innerHTML='<p class="admin-empty">Não foi possível carregar os perfis públicos.</p>';return;}
+    const profiles=(profilesResult.data||[]).filter(p=>p.id!==currentUser.id);
+    const followed=new Set((followingResult.data||[]).map(f=>f.followed_id));
+    window._84CommunityProfiles=profiles;
+    if(select)select.innerHTML='<option value="">Escolha uma pessoa</option>'+profiles.map(p=>'<option value="'+p.id+'">'+escapeHTML(p.display_name||p.full_name||"Utilizador")+'</option>').join("");
+    const term=(document.getElementById("communitySearch")?.value||"").toLowerCase();
+    const filtered=profiles.filter(p=>((p.display_name||"")+" "+(p.full_name||"")+" "+(p.country||"")).toLowerCase().includes(term));
+    const cards=await Promise.all(filtered.map(async p=>{
+      let avatar="";
+      if(p.avatar_path){const signed=await supabaseClient.storage.from("84books-avatars").createSignedUrl(p.avatar_path,1800);if(!signed.error&&signed.data)avatar=signed.data.signedUrl;}
+      return '<article class="community-profile-card"><div class="community-avatar">'+(avatar?'<img src="'+avatar+'" alt="">':'84')+'</div><div class="community-profile-info"><strong>'+escapeHTML(p.display_name||p.full_name||"Utilizador")+'</strong><span>'+escapeHTML(p.country||"País não indicado")+' · '+escapeHTML(p.profile_type||"Leitor")+'</span><small>'+(p.show_followers?p.follower_count+" seguidores":"Seguidores privados")+' · '+(p.show_following?p.following_count+" a seguir":"Lista privada")+'</small><p>'+escapeHTML(p.bio||"")+'</p></div><div class="community-profile-actions"><button type="button" data-follow-user="'+p.id+'">'+(followed.has(p.id)?"Deixar de seguir":"Seguir")+'</button><button type="button" data-message-user="'+p.id+'">Mensagem</button></div></article>';
+    }));
+    node.innerHTML=cards.join("")||'<p class="admin-empty">Não foram encontrados perfis públicos.</p>';
+  }
+
+  async function loadMessageThread(){
+    const recipient=document.getElementById("messageRecipient")?.value;
+    const thread=document.getElementById("messageThread");
+    if(!recipient||!thread){if(thread)thread.innerHTML='<p class="admin-empty">Escolha uma pessoa para abrir a conversa.</p>';return;}
+    const uid=currentUser.id;
+    const filter='and(sender_id.eq.'+uid+',recipient_id.eq.'+recipient+'),and(sender_id.eq.'+recipient+',recipient_id.eq.'+uid+')';
+    const {data,error}=await supabaseClient.from("private_messages").select("id,sender_id,recipient_id,body,read_at,created_at").or(filter).order("created_at",{ascending:true}).limit(100);
+    if(error){thread.innerHTML='<p class="admin-empty">Não foi possível carregar esta conversa.</p>';return;}
+    thread.innerHTML=(data||[]).map(m=>'<div class="message-bubble '+(m.sender_id===uid?"sent":"received")+'">'+escapeHTML(m.body)+'<small>'+new Date(m.created_at).toLocaleString("pt-AO")+'</small></div>').join("")||'<p class="admin-empty">Ainda não existem mensagens nesta conversa.</p>';
+    const unread=(data||[]).filter(m=>m.recipient_id===uid&&!m.read_at).map(m=>m.id);
+    if(unread.length)await supabaseClient.from("private_messages").update({read_at:new Date().toISOString()}).in("id",unread);
+    thread.scrollTop=thread.scrollHeight;
+  }
+
   async function loadPublicBooks(){
     const {data,error}=await supabaseClient.from("books")
-      .select("id,title,author,category,description,preview_text,book_type,price,status,cover_path,file_path,created_at,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count")
-      .eq("status","published")
+      .select("id,title,author,category,description,preview_text,book_type,price,status,cover_path,file_path,created_at,publication_origin,rights_status,rights_holder,rights_evidence,external_url,isbn,publisher,edition,publication_date,page_count,is_public")
+      .eq("status","published").eq("is_public",true)
       .order("created_at",{ascending:false});
     if(error){
       console.warn("84 Books: catálogo remoto ainda não disponível.",error.message);
@@ -938,7 +1014,7 @@ renderRoute();
     profileMessage.textContent = "A carregar o seu perfil...";
     const {data,error} = await supabaseClient
       .from("profiles")
-      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio, role, welcome_seen_at")
+      .select("full_name, display_name, phone, country, gender, birth_date, profile_type, bio, role, welcome_seen_at, is_public, show_full_name, show_country, show_phone, show_birth_date, show_gender, show_followers, show_following, avatar_path, avatar_public")
       .eq("id",user.id)
       .maybeSingle();
     if(error){
@@ -964,6 +1040,16 @@ renderRoute();
     profileFields.birthDate.value = profile.birth_date || "";
     profileFields.type.value = profile.profile_type || "reader";
     profileFields.bio.value = profile.bio || "";
+    profileFields.isPublic.checked = profile.is_public !== false;
+    profileFields.showFullName.checked = profile.show_full_name === true;
+    profileFields.showCountry.checked = profile.show_country !== false;
+    profileFields.showPhone.checked = profile.show_phone === true;
+    profileFields.showBirthDate.checked = profile.show_birth_date === true;
+    profileFields.showGender.checked = profile.show_gender === true;
+    profileFields.showFollowers.checked = profile.show_followers !== false;
+    profileFields.showFollowing.checked = profile.show_following !== false;
+    profileFields.avatarPublic.checked = profile.avatar_public !== false;
+    await renderOwnAvatar(profile.avatar_path || "");
     const phone = profile.phone || "";
     const phoneMatch = phone.match(/^(\+\d+)\s*(.*)$/);
     if(phoneMatch){
@@ -1019,6 +1105,25 @@ renderRoute();
     profileMessage.classList.remove("error");
     const phoneNumber = profileFields.phone.value.trim();
     const fullPhone = phoneNumber ? profileFields.dialCode.value + " " + phoneNumber : "";
+    const avatarFile=profileFields.avatarFile.files[0]||null;
+    if(avatarFile&&(!/^image\/(jpeg|png|webp)$/.test(avatarFile.type)||avatarFile.size>5*1024*1024)){
+      profileMessage.textContent="A fotografia deve ser JPG, PNG ou WEBP e ter no máximo 5 MB.";
+      profileMessage.classList.add("error");
+      profileSave.disabled=false;profileSave.textContent="Guardar perfil";return;
+    }
+    let avatarPath=null;
+    try{
+      if(avatarFile){
+        const clean=avatarFile.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+        avatarPath=currentUser.id+"/"+Date.now()+"-"+clean;
+        const upload=await supabaseClient.storage.from("84books-avatars").upload(avatarPath,avatarFile,{contentType:avatarFile.type,upsert:false});
+        if(upload.error)throw upload.error;
+      }
+    }catch(uploadError){
+      profileMessage.textContent=uploadError.message||"Não foi possível carregar a fotografia.";
+      profileMessage.classList.add("error");
+      profileSave.disabled=false;profileSave.textContent="Guardar perfil";return;
+    }
     const updates = {
       full_name: profileFields.fullName.value.trim(),
       display_name: profileFields.displayName.value.trim(),
@@ -1028,12 +1133,23 @@ renderRoute();
       birth_date: profileFields.birthDate.value || null,
       profile_type: profileFields.type.value,
       bio: profileFields.bio.value.trim(),
+      is_public: profileFields.isPublic.checked,
+      show_full_name: profileFields.showFullName.checked,
+      show_country: profileFields.showCountry.checked,
+      show_phone: profileFields.showPhone.checked,
+      show_birth_date: profileFields.showBirthDate.checked,
+      show_gender: profileFields.showGender.checked,
+      show_followers: profileFields.showFollowers.checked,
+      show_following: profileFields.showFollowing.checked,
+      avatar_public: profileFields.avatarPublic.checked,
+      ...(avatarPath?{avatar_path:avatarPath}:{}),
       updated_at: new Date().toISOString()
     };
     try{
       const {error} = await supabaseClient.from("profiles").update(updates).eq("id",currentUser.id);
       if(error) throw error;
       memberName.textContent = updates.display_name || updates.full_name || "leitor";
+      if(avatarPath){profileFields.avatarFile.value="";await renderOwnAvatar(avatarPath);}
       renderHomeGreeting(updates.display_name || updates.full_name);
       profileMessage.textContent = "Perfil guardado com sucesso.";
     }catch(error){
@@ -1062,6 +1178,22 @@ renderRoute();
       withdrawn:"Retirada"
     };
     return labels[status]||"Estado desconhecido";
+  }
+
+  async function loadMyPublishedBooks(){
+    const node=document.getElementById("myPublishedBooks");
+    if(!node||!currentUser)return;
+    const {data,error}=await supabaseClient.from("books").select("id,title,author,status,is_public").eq("author_user_id",currentUser.id).order("created_at",{ascending:false});
+    if(error){node.innerHTML='<p class="admin-empty">Não foi possível carregar as suas publicações.</p>';return;}
+    node.innerHTML=(data||[]).map(book=>'<article class="admin-book-row"><div class="admin-book-summary"><strong>'+escapeHTML(book.title)+'</strong><span>'+escapeHTML(book.author)+' · '+(book.is_public?"Público":"Privado")+'</span></div><label class="privacy-check"><input type="checkbox" data-book-visibility="'+book.id+'" '+(book.is_public?"checked":"")+'> <span>Livro visível ao público</span></label></article>').join("")||'<p class="admin-empty">Ainda não existem livros publicados ligados a esta conta. A equipa editorial terá de associar a obra ao seu perfil após a aprovação.</p>';
+    node.onchange=async event=>{
+      const toggle=event.target.closest("[data-book-visibility]");
+      if(!toggle)return;
+      toggle.disabled=true;
+      const {error}=await supabaseClient.from("books").update({is_public:toggle.checked}).eq("id",toggle.dataset.bookVisibility);
+      if(error){toggle.checked=!toggle.checked;window.alert(error.message);}
+      toggle.disabled=false;
+    };
   }
 
   async function loadActiveAuthorContract(){
@@ -1271,6 +1403,7 @@ renderRoute();
   window.addEventListener("84books:author-open",async()=>{
     await loadActiveAuthorContract();
     await loadAuthorSubmissions();
+    await loadMyPublishedBooks();
   });
 
   function resetAdminForm(){
@@ -1400,6 +1533,7 @@ renderRoute();
       resetAdminForm();
       await renderAdminBooks();
       await loadPublicBooks();
+      await loadMyPublishedBooks();
     }catch(error){
       if(newCover&&newCover!==oldCover)await supabaseClient.storage.from("84books-covers").remove([newCover]).catch(()=>{});
       if(newFile&&newFile!==oldFile)await supabaseClient.storage.from("84books-files").remove([newFile]).catch(()=>{});
@@ -1468,6 +1602,65 @@ renderRoute();
   window.addEventListener("84books:admin-open",()=>{
     renderAdminBooks();
     renderAdminAuthorSubmissions();
+    loadAdminUsers();
+  });
+  window.addEventListener("84books:community-open",loadCommunityProfiles);
+  const communitySearch=document.getElementById("communitySearch");
+  if(communitySearch)communitySearch.addEventListener("input",loadCommunityProfiles);
+  const communityRefresh=document.getElementById("communityRefresh");
+  if(communityRefresh)communityRefresh.addEventListener("click",loadCommunityProfiles);
+  const communityProfiles=document.getElementById("communityProfiles");
+  if(communityProfiles)communityProfiles.addEventListener("click",async event=>{
+    const followButton=event.target.closest("[data-follow-user]");
+    const messageButton=event.target.closest("[data-message-user]");
+    if(followButton){
+      const target=followButton.dataset.followUser;
+      const exists=followButton.textContent.trim()==="Deixar de seguir";
+      const result=exists
+        ?await supabaseClient.from("follows").delete().eq("follower_id",currentUser.id).eq("followed_id",target)
+        :await supabaseClient.from("follows").insert({follower_id:currentUser.id,followed_id:target});
+      if(result.error){window.alert(result.error.message);return;}
+      await loadCommunityProfiles();
+    }
+    if(messageButton){
+      const select=document.getElementById("messageRecipient");
+      select.value=messageButton.dataset.messageUser;
+      await loadMessageThread();
+      document.getElementById("messageBody").focus();
+    }
+  });
+  const messageRecipient=document.getElementById("messageRecipient");
+  if(messageRecipient)messageRecipient.addEventListener("change",loadMessageThread);
+  const messageForm=document.getElementById("messageForm");
+  if(messageForm)messageForm.addEventListener("submit",async event=>{
+    event.preventDefault();
+    const recipient=document.getElementById("messageRecipient").value;
+    const body=document.getElementById("messageBody").value.trim();
+    const status=document.getElementById("messageStatus");
+    if(!recipient||!body){status.textContent="Escolha uma pessoa e escreva a mensagem.";return;}
+    const {error}=await supabaseClient.from("private_messages").insert({sender_id:currentUser.id,recipient_id:recipient,body});
+    if(error){status.textContent=error.message;status.classList.add("error");return;}
+    document.getElementById("messageBody").value="";
+    status.textContent="Mensagem enviada.";
+    await loadMessageThread();
+  });
+  const refreshUsers=document.getElementById("adminRefreshUsers");
+  if(refreshUsers)refreshUsers.addEventListener("click",loadAdminUsers);
+  const brandForm=document.getElementById("adminBrandForm");
+  if(brandForm)brandForm.addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(current84Role!=="admin"||!currentUser)return;
+    const file=document.getElementById("adminBrandLogo").files[0];
+    const message=document.getElementById("adminBrandMessage");
+    if(!file){message.textContent="Escolha uma imagem para o logotipo.";return;}
+    if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>8*1024*1024){message.textContent="Use PNG, JPG ou WEBP até 8 MB.";message.classList.add("error");return;}
+    const path="branding/"+Date.now()+"-"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+    const upload=await supabaseClient.storage.from("84books-brand").upload(path,file,{contentType:file.type,upsert:false});
+    if(upload.error){message.textContent=upload.error.message;message.classList.add("error");return;}
+    const save=await supabaseClient.from("site_settings").update({logo_path:path,updated_by:currentUser.id,updated_at:new Date().toISOString()}).eq("setting_key","branding");
+    if(save.error){message.textContent=save.error.message;message.classList.add("error");return;}
+    message.textContent="Logotipo atualizado.";
+    await loadBranding();
   });
 
   window.addEventListener("84books:download-book",async event=>{
@@ -1496,6 +1689,7 @@ renderRoute();
     return;
   }
   supabaseClient = window.supabase.createClient(PROJECT_URL,PUBLISHABLE_KEY);
+  loadBranding();
 
   // Segurança de sessão: aviso aos 55 minutos e encerramento aos 60 minutos sem atividade.
   const IDLE_WARNING_MS = 55 * 60 * 1000;
@@ -1663,7 +1857,21 @@ renderRoute();
     try{
       if(mode==="signup"){
         const fullName=fullNameInput.value.trim();
-        const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:{full_name:fullName},emailRedirectTo:window.location.href.split("#")[0]}});
+        const signupMetadata={
+          full_name:fullName,
+          display_name:document.getElementById("authDisplayName").value.trim(),
+          country:document.getElementById("authCountry").value.trim(),
+          phone:document.getElementById("authPhone").value.trim(),
+          birth_date:document.getElementById("authBirthDate").value,
+          profile_type:document.getElementById("authProfileType").value
+        };
+        if(!signupMetadata.full_name||!signupMetadata.display_name||!signupMetadata.country||!signupMetadata.phone||!signupMetadata.birth_date){
+          throw new Error("Preencha todos os dados do cadastro antes de continuar.");
+        }
+        if(new Date(signupMetadata.birth_date)>new Date()){
+          throw new Error("A data de nascimento não pode estar no futuro.");
+        }
+        const {data,error}=await supabaseClient.auth.signUp({email,password,options:{data:signupMetadata,emailRedirectTo:window.location.href.split("#")[0]}});
         if(error) throw error;
         if(data.session){
           showMessage("Conta criada com sucesso! Já pode começar a utilizar a sua conta.");
