@@ -1,0 +1,42 @@
+/* 84 Books Publishing — autenticação em página integral */
+.auth-overlay.open{
+  display:flex!important;position:fixed;inset:0;z-index:9999;
+  align-items:stretch;justify-content:stretch;padding:0;
+  background:var(--paper);overflow-y:auto;
+}
+.auth-panel{
+  width:100%;max-width:none;min-height:100vh;min-height:100dvh;
+  max-height:none;height:auto;overflow:visible;border:0;box-shadow:none;
+  padding:clamp(28px,5vw,64px) clamp(20px,8vw,120px);
+  display:flex;flex-direction:column;justify-content:center;
+}
+.auth-panel>*{width:100%;max-width:720px;margin-left:auto;margin-right:auto}
+.auth-close{position:fixed;right:24px;top:18px;z-index:2;font-size:34px}
+.auth-brand{max-width:720px}
+.auth-panel h2{max-width:720px;font-size:clamp(30px,4vw,46px)}
+.auth-intro{max-width:720px;font-size:14px}
+.auth-tabs{max-width:720px}
+#authForm{max-width:720px}
+#authForm .signup-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+#authForm .signup-fields[hidden]{display:none!important}
+#authForm .signup-fields .auth-field{min-width:0}
+#authForm .signup-fields .auth-privacy-note{grid-column:1/-1}
+#authForm .auth-field{font-size:13px}
+#authForm .auth-field input,#authForm .auth-field select{height:50px;font-size:14px}
+#authForm>.auth-field{max-width:720px}
+#authForm .auth-submit{max-width:720px;min-height:52px;font-size:14px}
+.auth-message,.auth-forgot,.auth-privacy{max-width:720px;font-size:12px}
+.auth-field select{display:block;width:100%;height:50px;margin-top:7px;padding:0 13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:14px "DM Sans",sans-serif}
+.auth-phone-row{display:grid;grid-template-columns:minmax(115px, .35fr) minmax(0,1fr);gap:8px}
+.auth-phone-row select,.auth-phone-row input{min-width:0}
+.auth-password-wrap{position:relative}
+.auth-password-wrap input{padding-right:48px!important}
+.auth-password-toggle{position:absolute;right:8px;top:14px;border:0;background:transparent;color:var(--gold);padding:7px;cursor:pointer}
+.auth-confirm-error{color:#df827a;font-size:12px;min-height:18px;margin:4px 0 0}
+.auth-field-hint{display:block;color:var(--muted);font-size:10px;margin-top:6px}
+@media(max-width:650px){
+  .auth-panel{padding:72px 20px 32px;justify-content:flex-start}
+  #authForm .signup-fields{grid-template-columns:1fr}
+  #authForm .signup-fields .auth-privacy-note{grid-column:auto}
+  .auth-close{right:17px;top:12px}
+}
