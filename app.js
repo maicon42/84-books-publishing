@@ -1113,7 +1113,7 @@ renderRoute();
     profileMessage.classList.remove("error");
     const phoneNumber = profileFields.phone.value.trim();
     const dialCode=profileFields.dialCode.value.trim();
-    if(phoneNumber&&!/^\\+\\d{1,4}$/.test(dialCode)){profileMessage.textContent="Indique um indicativo internacional válido, por exemplo +244.";profileMessage.classList.add("error");profileSave.disabled=false;profileSave.textContent="Guardar perfil";return;}
+    if(phoneNumber&&!/^\+\d{1,4}$/.test(dialCode)){profileMessage.textContent="Indique um indicativo internacional válido, por exemplo +244.";profileMessage.classList.add("error");profileSave.disabled=false;profileSave.textContent="Guardar perfil";return;}
     const fullPhone = phoneNumber ? dialCode + " " + phoneNumber : "";
     const avatarFile=profileFields.avatarFile.files[0]||null;
     if(avatarFile&&(!/^image\/(jpeg|png|webp)$/.test(avatarFile.type)||avatarFile.size>5*1024*1024)){
@@ -1882,7 +1882,7 @@ renderRoute();
         if(!signupMetadata.full_name||!signupMetadata.display_name||!signupMetadata.country||!signupMetadata.phone||!signupMetadata.birth_date){
           throw new Error("Preencha todos os dados do cadastro antes de continuar.");
         }
-        if(!/^\\+\\d{1,4}\\s?\\d[\\d\\s()\\-]{5,}$/.test(signupMetadata.phone)){throw new Error("Introduza o telefone com o indicativo internacional, por exemplo +244 9XX XXX XXX.");}
+        if(!/^\+\d{1,4}\s?\d[\d\s()\-]{5,}$/.test(signupMetadata.phone)){throw new Error("Introduza o telefone com o indicativo internacional, por exemplo +244 9XX XXX XXX.");}
         if(new Date(signupMetadata.birth_date)>new Date()){
           throw new Error("A data de nascimento não pode estar no futuro.");
         }
