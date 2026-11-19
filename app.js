@@ -1502,7 +1502,7 @@ renderRoute();
       '<span class="idle-session-kicker">84 BOOKS PUBLISHING · SEGURANÇA</span>' +
       '<h2 id="idleSessionTitle">A sua sessão está prestes a terminar</h2>' +
       '<p>Não detetámos atividade na sua conta há algum tempo. Por segurança, a sessão será encerrada ao completar 60 minutos de inatividade.</p>' +
-      '<p class="idle-session-time">Faltam aproximadamente 5 minutos.</p>' +
+      '<p class="idle-session-time">A sessão será encerrada ao completar 60 minutos de inatividade.</p>' +
       '<div class="idle-session-actions">' +
         '<button type="button" id="idleContinueButton" class="idle-session-continue">Continuar sessão</button>' +
         '<button type="button" id="idleSignOutButton" class="idle-session-exit">Terminar sessão agora</button>' +
@@ -1591,9 +1591,9 @@ renderRoute();
     }catch(error){
       idleLastActivityAt = Date.now();
       showMessage("Não foi possível encerrar a sessão neste momento. Verifique a ligação e tente novamente.",true);
-      scheduleIdleCheck();
     }finally{
       idleSigningOut = false;
+      if(current84User) scheduleIdleCheck();
     }
   }
 
