@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261120-brand-identity-1">
-  <link rel="stylesheet" href="mobile-nav.css?v=20261117-1">
+  <link rel="stylesheet" href="styles.css?v=20261120-reader-redesign-2">
+  <link rel="stylesheet" href="mobile-nav.css?v=20261120-reader-redesign-2">
   <link rel="stylesheet" href="auth-fullscreen.css?v=4">
 </head>
 <body>
@@ -80,11 +80,23 @@
         <div class="home-shelf-heading">
           <div>
             <div class="eyebrow dark"><span></span> ESCOLHAS EDITORIAIS</div>
-            <h2>Livros em destaque</h2>
-            <p>Publicações escolhidas pela equipa da 84 Books Publishing.</p>
+            <h2>Outras obras para descobrir</h2>
+            <p>Continue a explorar o catálogo e encontre novas leituras.</p>
           </div>
         </div>
         <div class="home-placeholder" id="homeFeaturedBooks">Os livros selecionados para destaque aparecerão aqui.</div>
+      </section>
+
+      <section class="home-shelf home-personal-shelf" id="homeFavoritesShelf" hidden>
+        <div class="home-shelf-heading">
+          <div>
+            <div class="eyebrow dark"><span></span> A SUA COLEÇÃO</div>
+            <h2>Livros guardados</h2>
+            <p>As obras que adicionou aos seus favoritos, reunidas num só lugar.</p>
+          </div>
+          <a class="text-link dark-link" href="#/favoritos">Ver favoritos <span>→</span></a>
+        </div>
+        <div class="home-book-grid" id="homeFavoritesBooks"></div>
       </section>
 
       <div class="home-ranking-grid">
@@ -93,7 +105,7 @@
             <div>
               <div class="eyebrow dark"><span></span> EM EVIDÊNCIA</div>
               <h2>Mais visualizados</h2>
-              <p>Os livros que despertam mais curiosidade.</p>
+              <p>Uma seleção baseada em dados reais de visitas, quando o registo estiver ativo.</p>
             </div>
           </div>
           <div class="home-placeholder" id="homeMostViewed">As visualizações serão apresentadas quando o registo de visitas estiver ativo.</div>
@@ -104,7 +116,7 @@
             <div>
               <div class="eyebrow dark"><span></span> PREFERIDOS DOS LEITORES</div>
               <h2>Mais lidos</h2>
-              <p>As obras com maior número de leituras.</p>
+              <p>Os títulos mais lidos serão apresentados quando a contagem de leitura estiver disponível.</p>
             </div>
           </div>
           <div class="home-placeholder" id="homeMostRead">As leituras serão apresentadas quando o registo de leitura estiver ativo.</div>
@@ -541,7 +553,7 @@
     </section>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261120-recovery-1"></script>
+  <script src="app.js?v=20261120-reader-redesign-2"></script>
   <script src="auth-v2.js?v=4"></script>
 </body>
 </html>
