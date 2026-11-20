@@ -48,15 +48,27 @@ function renderHomeBookCard(book){
     '<span class="home-book-link">Conhecer livro →</span>'+
   '</a>';
 }
+function renderHomeShelf(containerId,list,emptyText){
+  const node=document.getElementById(containerId);
+  if(!node)return;
+  node.innerHTML=list.length?list.map(renderHomeBookCard).join(""):'<p class="home-empty">'+escapeHTML(emptyText)+'</p>';
+}
 function renderHome(){
-  const latestContainer=document.getElementById("homeLatestBooks");
-  if(!latestContainer)return;
-  const latest=books.filter(book=>book.isRemote&&book.status==="published"&&book.type!=="breve")
-    .sort((a,b)=>new Date(b.createdAt||0).getTime()-new Date(a.createdAt||0).getTime())
-    .slice(0,4);
-  latestContainer.innerHTML=latest.length
-    ?latest.map(renderHomeBookCard).join("")
-    :'<p class="home-empty">Ainda não há novos livros publicados. Quando a equipa lançar uma obra, ela aparecerá aqui.</p>';
+  const published=books.filter(book=>book.isRemote&&book.status==="published"&&book.type!=="breve")
+    .sort((a,b)=>new Date(b.createdAt||0).getTime()-new Date(a.createdAt||0).getTime());
+  const latest=published.slice(0,4);
+  const latestIds=new Set(latest.map(book=>String(book.id)));
+  const discoveries=published.filter(book=>!latestIds.has(String(book.id))).slice(0,4);
+  renderHomeShelf("homeLatestBooks",latest,"Ainda não há livros publicados. Assim que a equipa lançar a primeira obra, ela aparecerá aqui.");
+  renderHomeShelf("homeFeaturedBooks",discoveries,"O catálogo está a crescer. Quando houver mais publicações, encontrará aqui outras obras para descobrir.");
+  const saved=published.filter(book=>favorites.has(bookKey(book.id)));
+  const favoriteShelf=document.getElementById("homeFavoritesShelf");
+  if(favoriteShelf)favoriteShelf.hidden=saved.length===0;
+  renderHomeShelf("homeFavoritesBooks",saved.slice(0,4),"Ainda não guardou livros.");
+  const viewed=document.getElementById("homeMostViewed");
+  const read=document.getElementById("homeMostRead");
+  if(viewed)viewed.innerHTML='<div class="home-ranking-empty"><span>↗</span><strong>Ranking em preparação</strong><p>Estamos a preparar a medição de visualizações para apresentar dados reais, sem números inventados.</p></div>';
+  if(read)read.innerHTML='<div class="home-ranking-empty"><span>▤</span><strong>Ranking em preparação</strong><p>Assim que o registo de leitura estiver ativo, esta secção mostrará os livros mais lidos.</p></div>';
 }
 
 function normalizeBookText(value){
